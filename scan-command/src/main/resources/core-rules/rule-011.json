@@ -3,6 +3,7 @@
   "kind": "CODE_SMELL",
   "description": "Unused class private fields",
   "fullDescription": "A private class field that is never read or written outside of its own declaration serves no purpose and should be removed, as it adds maintenance overhead without contributing to the class's behavior.",
+  "securitySeverity": 0.0,
   "tags": [
     "maintainability"
   ]

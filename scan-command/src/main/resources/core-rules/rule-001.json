@@ -3,6 +3,7 @@
   "kind": "CODE_SMELL",
   "description": "Avoid checkpanic",
   "fullDescription": "The `checkpanic` expression causes the program to panic and terminate abruptly when the checked expression evaluates to an error, instead of allowing the error to be handled. Prefer `check` with explicit error handling so callers can recover instead of crashing.",
+  "securitySeverity": 5.3,
   "tags": [
     "maintainability",
     "external/cwe/cwe-248",

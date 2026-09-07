@@ -3,6 +3,7 @@
   "kind": "CODE_SMELL",
   "description": "Invalid range expression",
   "fullDescription": "A range expression whose lower bound is greater than (or, for the inclusive `...` operator, greater than or equal to) its upper bound never produces any elements, so any loop or operation over it is dead code.",
+  "securitySeverity": 0.0,
   "tags": [
     "maintainability"
   ]

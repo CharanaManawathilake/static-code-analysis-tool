@@ -3,6 +3,7 @@
   "kind": "CODE_SMELL",
   "description": "Unused function parameter",
   "fullDescription": "A function parameter that is declared but never referenced in the function body adds noise, misleads readers about the function's behavior, and may indicate incomplete implementation or a leftover from refactoring.",
+  "securitySeverity": 0.0,
   "tags": [
     "maintainability"
   ]

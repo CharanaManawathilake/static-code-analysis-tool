@@ -45,7 +45,8 @@ public class CoreRuleOutputTest extends BaseTest {
     // Location known to fall within bal-project-with-analyzer-configurations/main.bal.
     private final BLangDiagnosticLocation location = new BLangDiagnosticLocation("main.bal", 20, 20, 17, 39, 777, 22);
 
-    @Test(description = "test that unspecified optional rule fields are omitted from the Ballerina JSON output")
+    @Test(description = "test that precision is omitted, cwe/owasp never appear, and securitySeverity is present "
+            + "in the Ballerina JSON output")
     void testOptionalFieldsOmittedFromJsonOutput() {
         Issue issue = new IssueImpl(location, CoreRule.AVOID_CHECKPANIC.rule(), Source.BUILT_IN, "main.bal",
                 balProject.resolve("main.bal").toString());
@@ -53,8 +54,8 @@ public class CoreRuleOutputTest extends BaseTest {
 
         Assert.assertFalse(json.contains("\"precision\""),
                 "precision should be omitted since rule 1's metadata does not specify one");
-        Assert.assertFalse(json.contains("\"securitySeverity\""),
-                "securitySeverity should be omitted for a non-security rule");
+        Assert.assertTrue(json.contains("\"securitySeverity\": 5.3"),
+                "securitySeverity should be present since every core rule now specifies one");
         Assert.assertFalse(json.contains("\"cwe\""),
                 "cwe should never appear in the Ballerina JSON output (redundant with tags)");
         Assert.assertFalse(json.contains("\"owasp\""),
@@ -76,7 +77,7 @@ public class CoreRuleOutputTest extends BaseTest {
                 "precision should still be omitted since rule 13's metadata does not specify one");
     }
 
-    @Test(description = "test that unspecified optional rule properties are omitted from the SARIF output")
+    @Test(description = "test that precision is omitted and security-severity is present in the SARIF output")
     void testOptionalFieldsOmittedFromSarifOutput() throws Exception {
         Project project = ProjectLoader.load(balProject).project();
         Issue issue = new IssueImpl(location, CoreRule.AVOID_CHECKPANIC.rule(), Source.BUILT_IN, "main.bal",
@@ -85,8 +86,8 @@ public class CoreRuleOutputTest extends BaseTest {
 
         Assert.assertFalse(sarif.contains("\"precision\""),
                 "SARIF properties should omit precision since rule 1's metadata does not specify one");
-        Assert.assertFalse(sarif.contains("\"security-severity\""),
-                "SARIF properties should omit security-severity for a non-security rule");
+        Assert.assertTrue(sarif.contains("\"security-severity\": \"5.3\""),
+                "SARIF properties should include security-severity since every core rule now specifies one");
         Assert.assertTrue(sarif.contains("\"tags\""), "SARIF properties should still include tags");
         Assert.assertTrue(sarif.contains("\"snippet\""), "SARIF region should include a source snippet");
     }

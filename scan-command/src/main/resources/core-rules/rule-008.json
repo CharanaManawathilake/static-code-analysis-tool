@@ -3,6 +3,7 @@
   "kind": "CODE_SMELL",
   "description": "This operation always evaluates to false",
   "fullDescription": "This binary operation always evaluates to `false` regardless of the runtime value of its operands, based on the semantics of the operator and a constant operand (e.g. comparisons against `int:MAX_VALUE`/`int:MIN_VALUE`/`float:Infinity`). This is usually unintended and indicates dead logic or a mistake in the condition.",
+  "securitySeverity": 5.5,
   "tags": [
     "maintainability",
     "external/cwe/cwe-570"

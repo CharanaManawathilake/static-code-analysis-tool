@@ -3,6 +3,7 @@
   "kind": "CODE_SMELL",
   "description": "This operation always evaluates to the same value",
   "fullDescription": "This binary operation always reduces to the value of one of its own operands regardless of the other (e.g. `a || false`, `a && true`), making the operation itself redundant and the code harder to read.",
+  "securitySeverity": 0.0,
   "tags": [
     "maintainability"
   ]

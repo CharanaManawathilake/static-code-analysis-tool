@@ -27,6 +27,7 @@
         "external/cwe/cwe-636",
         "external/owasp/owasp-a10-2025"
       ],
+      "securitySeverity": 5.3,
       "ruleKind": "CODE_SMELL"
     },
     "source": "BUILT_IN",
@@ -61,6 +62,7 @@
         "external/cwe/cwe-636",
         "external/owasp/owasp-a10-2025"
       ],
+      "securitySeverity": 5.3,
       "ruleKind": "CODE_SMELL"
     },
     "source": "BUILT_IN",

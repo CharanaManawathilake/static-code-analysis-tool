@@ -67,6 +67,7 @@ public class CoreRuleTest {
             // core-rules/rule-0NN.json files specify it - it must stay null/omitted until it has.
             Assert.assertNull(rule.precision(), "precision should not be set for " + rule.id() +
                     " until it has been reviewed for that rule");
+            Assert.assertNotNull(rule.securitySeverity(), "securitySeverity should be populated for " + rule.id());
         }
     }
 
@@ -83,7 +84,7 @@ public class CoreRuleTest {
                 "external/cwe/cwe-636", "external/owasp/owasp-a10-2025"));
         Assert.assertEquals(rule.cwe(), List.of(248, 636));
         Assert.assertEquals(rule.owasp(), List.of("A10:2025"));
-        Assert.assertNull(rule.securitySeverity());
+        Assert.assertEquals(rule.securitySeverity(), Double.valueOf(5.3));
     }
 
     @Test(description = "test unused function parameters test")
@@ -96,7 +97,7 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.tags(), List.of("maintainability"));
         Assert.assertTrue(rule.cwe().isEmpty());
         Assert.assertTrue(rule.owasp().isEmpty());
-        Assert.assertNull(rule.securitySeverity());
+        Assert.assertEquals(rule.securitySeverity(), Double.valueOf(0.0));
     }
 
     @Test(description = "test unused class fields rule")
