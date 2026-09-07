@@ -7,7 +7,10 @@
       "startColumn": 0,
       "endColumn": 1,
       "startOffset": 664,
-      "length": 139
+      "length": 139,
+      "snippet": {
+        "text": "function getResult() returns int|error \u003d\u003e 1;\r\n\r\npublic function main() {\r\n    // Non-compliant\r\n    int result \u003d checkpanic getResult();\r\n}"
+      }
     },
     "rule": {
       "id": "ballerina/example_module_static_code_analyzer:1",
@@ -27,7 +30,10 @@
       "startColumn": 0,
       "endColumn": 1,
       "startOffset": 664,
-      "length": 139
+      "length": 139,
+      "snippet": {
+        "text": "function getResult() returns int|error \u003d\u003e 1;\r\n\r\npublic function main() {\r\n    // Non-compliant\r\n    int result \u003d checkpanic getResult();\r\n}"
+      }
     },
     "rule": {
       "id": "exampleOrg/example_module_static_code_analyzer:1",
@@ -47,7 +53,10 @@
       "startColumn": 0,
       "endColumn": 1,
       "startOffset": 664,
-      "length": 139
+      "length": 139,
+      "snippet": {
+        "text": "function getResult() returns int|error \u003d\u003e 1;\r\n\r\npublic function main() {\r\n    // Non-compliant\r\n    int result \u003d checkpanic getResult();\r\n}"
+      }
     },
     "rule": {
       "id": "ballerinax/example_module_static_code_analyzer:1",

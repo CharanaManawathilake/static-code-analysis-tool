@@ -18,6 +18,8 @@
 
 package io.ballerina.scan;
 
+import java.util.List;
+
 /**
  * {@code Rule} represents a static code analysis rule.
  *
@@ -51,4 +53,99 @@ public interface Rule {
      * @return rule kind of the rule
      */
     RuleKind kind();
+
+    /**
+     * Returns the human-readable name of the rule. Defaults to {@link #description()} when not
+     * overridden.
+     *
+     * @return name of the rule
+     */
+    default String name() {
+        return description();
+    }
+
+    /**
+     * Returns the full/long description of the rule. Defaults to {@link #description()} when not
+     * overridden.
+     *
+     * @return full description of the rule
+     */
+    default String fullDescription() {
+        return description();
+    }
+
+    /**
+     * Returns a URI pointing to further documentation on the rule, or {@code null} when unavailable.
+     *
+     * @return help URI of the rule, or {@code null}
+     */
+    default String helpUri() {
+        return null;
+    }
+
+    /**
+     * Returns the reporting level of the rule (e.g. {@code error}/{@code warning}/{@code note}),
+     * or {@code null} when unavailable.
+     *
+     * @return level of the rule, or {@code null}
+     */
+    default String level() {
+        return null;
+    }
+
+    /**
+     * Returns whether the rule is enabled by default, or {@code null} when unavailable.
+     *
+     * @return {@code true}/{@code false} if known, otherwise {@code null}
+     */
+    default Boolean enabled() {
+        return null;
+    }
+
+    /**
+     * Returns the tags associated with the rule (e.g. category and CWE/OWASP references).
+     *
+     * @return tags of the rule, or an empty list when unavailable
+     */
+    default List<String> tags() {
+        return List.of();
+    }
+
+    /**
+     * Returns the CWE identifiers associated with the rule.
+     *
+     * @return CWE identifiers of the rule, or an empty list when unavailable
+     */
+    default List<Integer> cwe() {
+        return List.of();
+    }
+
+    /**
+     * Returns the OWASP Top 10 category identifiers associated with the rule.
+     *
+     * @return OWASP category identifiers of the rule, or an empty list when unavailable
+     */
+    default List<String> owasp() {
+        return List.of();
+    }
+
+    /**
+     * Returns the precision/confidence of the rule (e.g. {@code high}/{@code medium}/{@code low}),
+     * or {@code null} when unavailable.
+     *
+     * @return precision of the rule, or {@code null}
+     */
+    default String precision() {
+        return null;
+    }
+
+    /**
+     * Returns the security severity score of the rule, or {@code null} when unavailable or not
+     * applicable.
+     *
+     * @return security severity of the rule, or {@code null}
+     */
+    default Double securitySeverity() {
+        return null;
+    }
 }

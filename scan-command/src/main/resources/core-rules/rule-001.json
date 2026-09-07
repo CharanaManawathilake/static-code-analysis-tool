@@ -1,0 +1,14 @@
+{
+  "id": 1,
+  "kind": "CODE_SMELL",
+  "description": "Avoid checkpanic",
+  "fullDescription": "The `checkpanic` expression causes the program to panic and terminate abruptly when the checked expression evaluates to an error, instead of allowing the error to be handled. Prefer `check` with explicit error handling so callers can recover instead of crashing.",
+  "tags": [
+    "maintainability",
+    "external/cwe/cwe-248",
+    "external/cwe/cwe-636",
+    "external/owasp/owasp-a10-2025"
+  ],
+  "cwe": [248, 636],
+  "owasp": ["A10:2025"]
+}

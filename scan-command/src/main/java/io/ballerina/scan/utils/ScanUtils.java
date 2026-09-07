@@ -31,6 +31,7 @@ import io.ballerina.scan.Issue;
 import io.ballerina.scan.Rule;
 import io.ballerina.scan.RuleKind;
 import io.ballerina.scan.internal.IssueImpl;
+import io.ballerina.scan.internal.RuleFactory;
 import io.ballerina.toml.api.Toml;
 import io.ballerina.toml.semantic.TomlType;
 import io.ballerina.toml.semantic.ast.TomlArrayValueNode;
@@ -55,6 +56,8 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.AbstractMap;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -114,7 +117,6 @@ import static io.ballerina.scan.utils.Constants.SCAN_REPORT_PROJECT_NAME;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_SCANNED_FILES;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_ZIP_FILE;
 import static io.ballerina.scan.utils.Constants.SCAN_TABLE;
-import static java.util.Locale.ROOT;
 
 /**
  * {@code ScanUtils} contains all the utility functions used by the scan tool.
@@ -164,6 +166,19 @@ public final class ScanUtils {
     public static String convertIssuesToJsonString(List<Issue> issues) {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         JsonArray issuesAsJson = gson.toJsonTree(issues).getAsJsonArray();
+
+        Map<String, String> fileContentCache = new HashMap<>();
+        for (int i = 0; i < issues.size(); i++) {
+            IssueImpl issueImpl = (IssueImpl) issues.get(i);
+            String snippetText = extractSnippet(issueImpl.filePath(), issueImpl.location().textRange(),
+                    fileContentCache);
+            if (snippetText != null) {
+                JsonObject snippet = new JsonObject();
+                snippet.addProperty("text", snippetText);
+                issuesAsJson.get(i).getAsJsonObject().getAsJsonObject("location").add("snippet", snippet);
+            }
+        }
+
         String json = gson.toJson(issuesAsJson);
         if (File.separator.equals("\\")) {
             // Gson JSON-escapes backslashes in fileName (\ -> \\), but fileName is a display field
@@ -207,33 +222,18 @@ public final class ScanUtils {
         // Create rules array for the tool
         JsonArray rules = new JsonArray();
         Map<String, JsonObject> ruleMap = new HashMap<>();
+        Map<String, Integer> ruleIndexMap = new HashMap<>();
         Set<String> addedRuleIds = new HashSet<>();
 
         // Collect unique rules from issues
         for (Issue issue : issues) {
             IssueImpl issueImpl = (IssueImpl) issue;
-            String ruleId = issueImpl.rule().id();
+            Rule rule = issueImpl.rule();
+            String ruleId = rule.id();
 
-            JsonObject ruleObject = ruleMap.computeIfAbsent(ruleId, id -> {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("id", id);
-
-                // Construct helpUri based on rule ID and description
-                String helpUri = constructHelpUri(id, issueImpl.rule().description());
-                obj.addProperty("helpUri", helpUri);
-
-                JsonObject shortDescription = new JsonObject();
-                shortDescription.addProperty("text", issueImpl.rule().description());
-                obj.add("shortDescription", shortDescription);
-
-                String level = mapRuleKindToSarifLevel(issueImpl.rule().kind());
-                JsonObject defaultConfiguration = new JsonObject();
-                defaultConfiguration.addProperty("level", level);
-                obj.add("defaultConfiguration", defaultConfiguration);
-
-                return obj;
-            });
+            JsonObject ruleObject = ruleMap.computeIfAbsent(ruleId, id -> buildSarifRuleObject(rule));
             if (addedRuleIds.add(ruleId)) {
+                ruleIndexMap.put(ruleId, rules.size());
                 rules.add(ruleObject);
             }
         }
@@ -244,16 +244,21 @@ public final class ScanUtils {
 
         // Create results array
         JsonArray results = new JsonArray();
+        Map<String, List<String>> fileLinesCache = new HashMap<>();
+        Map<String, Integer> lineHashOccurrences = new HashMap<>();
+        Map<String, String> fileContentCache = new HashMap<>();
 
         for (Issue issue : issues) {
             IssueImpl issueImpl = (IssueImpl) issue;
+            Rule rule = issueImpl.rule();
             JsonObject result = new JsonObject();
 
-            result.addProperty("ruleId", issueImpl.rule().id());
-            result.addProperty("level", mapRuleKindToSarifLevel(issueImpl.rule().kind()));
+            result.addProperty("ruleId", rule.id());
+            result.addProperty("ruleIndex", ruleIndexMap.get(rule.id()));
+            result.addProperty("level", rule.level() != null ? rule.level() : mapRuleKindToSarifLevel(rule.kind()));
 
             JsonObject message = new JsonObject();
-            message.addProperty("text", issueImpl.rule().description());
+            message.addProperty("text", rule.description());
             result.add("message", message);
 
             // Create locations array
@@ -275,11 +280,25 @@ public final class ScanUtils {
             region.addProperty("endColumn", lineRange.endLine().offset() + 1);
             region.addProperty("charOffset", textRange.startOffset());
             region.addProperty("charLength", textRange.length());
+
+            String snippetText = extractSnippet(issueImpl.filePath(), textRange, fileContentCache);
+            if (snippetText != null) {
+                JsonObject snippet = new JsonObject();
+                snippet.addProperty("text", snippetText);
+                region.add("snippet", snippet);
+            }
+
             physicalLocation.add("region", region);
 
             location.add("physicalLocation", physicalLocation);
             locations.add(location);
             result.add("locations", locations);
+
+            JsonObject partialFingerprints = new JsonObject();
+            partialFingerprints.addProperty("primaryLocationLineHash",
+                    computeLineHash(issueImpl.filePath(), lineRange.startLine().line(), fileLinesCache,
+                            lineHashOccurrences));
+            result.add("partialFingerprints", partialFingerprints);
 
             results.add(result);
         }
@@ -292,22 +311,133 @@ public final class ScanUtils {
     }
 
     /**
-     * Constructs the helpUri based on rule ID and description.
+     * Builds the SARIF rule object for a single {@link Rule}, including the enriched metadata
+     * (full description, tags, precision, security-severity, ruleKind) when the rule carries it.
      *
-     * @param ruleId      the rule ID
-     * @param description the rule description
-     * @return the constructed helpUri
+     * @param rule the rule to build a SARIF rule object for
+     * @return the SARIF rule object
      */
-    private static String constructHelpUri(String ruleId, String description) {
-        String baseUri = SARIF_TOOL_URI + SARIF_TOOL_VERSION;
-        String anchor;
-        String idPart = ruleId.replace(":", "").replace("/", "");
-        String descPart = description.toLowerCase(ROOT)
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("-$", "")
-                .replaceAll("^-", "");
-        anchor = "#" + idPart + "---" + descPart;
-        return baseUri + anchor;
+    private static JsonObject buildSarifRuleObject(Rule rule) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("id", rule.id());
+
+        String helpUri = rule.helpUri() != null ? rule.helpUri()
+                : RuleFactory.buildHelpUri(rule.id(), rule.description());
+        obj.addProperty("helpUri", helpUri);
+
+        JsonObject shortDescription = new JsonObject();
+        shortDescription.addProperty("text", rule.description());
+        obj.add("shortDescription", shortDescription);
+
+        if (rule.fullDescription() != null) {
+            JsonObject fullDescription = new JsonObject();
+            fullDescription.addProperty("text", rule.fullDescription());
+            obj.add("fullDescription", fullDescription);
+        }
+
+        String level = rule.level() != null ? rule.level() : mapRuleKindToSarifLevel(rule.kind());
+        JsonObject defaultConfiguration = new JsonObject();
+        defaultConfiguration.addProperty("level", level);
+        if (rule.enabled() != null) {
+            defaultConfiguration.addProperty("enabled", rule.enabled());
+        }
+        obj.add("defaultConfiguration", defaultConfiguration);
+
+        JsonObject properties = new JsonObject();
+        properties.addProperty("ruleKind", rule.kind().toString());
+        if (rule.tags() != null && !rule.tags().isEmpty()) {
+            JsonArray tags = new JsonArray();
+            rule.tags().forEach(tags::add);
+            properties.add("tags", tags);
+        }
+        if (rule.precision() != null) {
+            properties.addProperty("precision", rule.precision());
+        }
+        if (rule.securitySeverity() != null) {
+            properties.addProperty("security-severity", String.valueOf(rule.securitySeverity()));
+        }
+        obj.add("properties", properties);
+
+        return obj;
+    }
+
+    /**
+     * Extracts the exact source text an issue's location covers (from {@code textRange}), for use
+     * as a {@code snippet.text} value in both the SARIF and Ballerina JSON output. Returns
+     * {@code null} when the file cannot be read or the range falls outside its content, so callers
+     * can simply omit the snippet in that case.
+     *
+     * @param filePath       absolute path of the file the issue was found in
+     * @param textRange      the character range of the issue's location
+     * @param fileContentCache cache of file path to its full content, shared across a single report
+     * @return the source text covered by the range, or {@code null} when unavailable
+     */
+    private static String extractSnippet(String filePath, TextRange textRange,
+                                         Map<String, String> fileContentCache) {
+        String content = fileContentCache.computeIfAbsent(filePath, path -> {
+            try {
+                return Files.readString(Path.of(path), StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                return null;
+            }
+        });
+        if (content == null) {
+            return null;
+        }
+        int start = textRange.startOffset();
+        int end = start + textRange.length();
+        if (start < 0 || end > content.length() || start > end) {
+            return null;
+        }
+        return content.substring(start, end);
+    }
+
+    /**
+     * Computes a SARIF {@code partialFingerprints.primaryLocationLineHash}-shaped value for a
+     * result: an MD5 hash of the (trimmed) source line the issue starts on, followed by the
+     * 1-based occurrence count of that same hash seen so far in this run, e.g.
+     * {@code "8b5fadf7b30060f688c7e7a10a39b8a7:1"}. SARIF does not mandate a specific
+     * fingerprinting algorithm; this is the scan tool's own convention.
+     *
+     * @param filePath          absolute path of the file the issue was found in
+     * @param lineIndex         zero-based line index the issue starts on
+     * @param fileLinesCache    cache of file path to its lines, shared across a single SARIF run
+     * @param hashOccurrences   occurrence counts per hash, shared across a single SARIF run
+     * @return the computed line hash fingerprint
+     */
+    private static String computeLineHash(String filePath, int lineIndex, Map<String, List<String>> fileLinesCache,
+                                          Map<String, Integer> hashOccurrences) {
+        List<String> lines = fileLinesCache.computeIfAbsent(filePath, path -> {
+            try {
+                return Files.readAllLines(Path.of(path), StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                return List.of();
+            }
+        });
+        String lineText = (lineIndex >= 0 && lineIndex < lines.size()) ? lines.get(lineIndex).strip() : "";
+        String hash = md5Hex(lineText);
+        int occurrence = hashOccurrences.merge(hash, 1, Integer::sum);
+        return hash + ":" + occurrence;
+    }
+
+    /**
+     * Returns the MD5 hex digest of the given text.
+     *
+     * @param text the text to hash
+     * @return the MD5 hex digest
+     */
+    private static String md5Hex(String text) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            byte[] hashBytes = digest.digest(text.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder(hashBytes.length * 2);
+            for (byte b : hashBytes) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            return Integer.toHexString(text.hashCode());
+        }
     }
 
     /**

@@ -7,7 +7,10 @@
       "startColumn": 0,
       "endColumn": 1,
       "startOffset": 648,
-      "length": 134
+      "length": 134,
+      "snippet": {
+        "text": "function getResult() returns int|error \u003d\u003e 1;\n\npublic function main() {\n    // Non-compliant\n    int result \u003d checkpanic getResult();\n}"
+      }
     },
     "rule": {
       "id": "ballerina/example_module_static_code_analyzer:1",
@@ -27,7 +30,10 @@
       "startColumn": 0,
       "endColumn": 1,
       "startOffset": 648,
-      "length": 134
+      "length": 134,
+      "snippet": {
+        "text": "function getResult() returns int|error \u003d\u003e 1;\n\npublic function main() {\n    // Non-compliant\n    int result \u003d checkpanic getResult();\n}"
+      }
     },
     "rule": {
       "id": "exampleOrg/example_module_static_code_analyzer:1",
@@ -47,7 +53,10 @@
       "startColumn": 0,
       "endColumn": 1,
       "startOffset": 648,
-      "length": 134
+      "length": 134,
+      "snippet": {
+        "text": "function getResult() returns int|error \u003d\u003e 1;\n\npublic function main() {\n    // Non-compliant\n    int result \u003d checkpanic getResult();\n}"
+      }
     },
     "rule": {
       "id": "ballerinax/example_module_static_code_analyzer:1",

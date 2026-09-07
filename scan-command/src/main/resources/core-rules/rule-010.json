@@ -1,0 +1,11 @@
+{
+  "id": 10,
+  "kind": "CODE_SMELL",
+  "description": "This variable is assigned to itself",
+  "fullDescription": "Assigning a variable to itself has no effect and is usually a mistake, such as a typo where a different variable or field was intended on one side of the assignment.",
+  "tags": [
+    "maintainability",
+    "external/cwe/cwe-1164"
+  ],
+  "cwe": [1164]
+}

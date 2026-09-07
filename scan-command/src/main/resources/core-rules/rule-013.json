@@ -1,0 +1,14 @@
+{
+  "id": 13,
+  "kind": "VULNERABILITY",
+  "description": "Hard-coded secrets are security-sensitive",
+  "fullDescription": "Embedding secrets such as passwords, API keys, or tokens directly as literal values in source code exposes them to anyone with access to the codebase or its version history, and makes rotating a compromised secret require a code change and redeploy.",
+  "securitySeverity": 8.6,
+  "tags": [
+    "security",
+    "external/cwe/cwe-798",
+    "external/owasp/owasp-a07-2025"
+  ],
+  "cwe": [798],
+  "owasp": ["A07:2025"]
+}

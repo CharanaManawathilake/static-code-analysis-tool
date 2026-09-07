@@ -23,6 +23,8 @@ import io.ballerina.scan.RuleKind;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.List;
+
 /**
  * Core static code analysis rules tests.
  *
@@ -52,6 +54,22 @@ public class CoreRuleTest {
         Assert.assertEquals(CoreRule.rules().size(), 14);
     }
 
+    @Test(description = "test that every core rule carries its rich metadata")
+    void testAllRulesHaveRichMetadata() {
+        for (Rule rule : CoreRule.rules()) {
+            Assert.assertEquals(rule.name(), rule.description(), "name should default to description for " +
+                    rule.id());
+            Assert.assertNotNull(rule.fullDescription(), "fullDescription should be populated for " + rule.id());
+            Assert.assertNotNull(rule.helpUri(), "helpUri should be populated for " + rule.id());
+            Assert.assertNotNull(rule.level(), "level should be populated for " + rule.id());
+            Assert.assertEquals(rule.enabled(), Boolean.TRUE, "enabled should default to true for " + rule.id());
+            // precision has not been vetted for any core rule yet, so none of the bundled
+            // core-rules/rule-0NN.json files specify it - it must stay null/omitted until it has.
+            Assert.assertNull(rule.precision(), "precision should not be set for " + rule.id() +
+                    " until it has been reviewed for that rule");
+        }
+    }
+
     @Test(description = "test checkpanic rule")
     void testCheckpanicRule() {
         Rule rule = CoreRule.AVOID_CHECKPANIC.rule();
@@ -59,6 +77,13 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.numericId(), 1);
         Assert.assertEquals(rule.description(), AVOID_CHECKPANIC);
         Assert.assertEquals(rule.kind(), RuleKind.CODE_SMELL);
+        Assert.assertEquals(rule.level(), "note");
+        Assert.assertNull(rule.precision());
+        Assert.assertEquals(rule.tags(), List.of("maintainability", "external/cwe/cwe-248",
+                "external/cwe/cwe-636", "external/owasp/owasp-a10-2025"));
+        Assert.assertEquals(rule.cwe(), List.of(248, 636));
+        Assert.assertEquals(rule.owasp(), List.of("A10:2025"));
+        Assert.assertNull(rule.securitySeverity());
     }
 
     @Test(description = "test unused function parameters test")
@@ -68,6 +93,10 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.numericId(), 2);
         Assert.assertEquals(rule.description(), UNUSED_FUNCTION_PARAMETER);
         Assert.assertEquals(rule.kind(), RuleKind.CODE_SMELL);
+        Assert.assertEquals(rule.tags(), List.of("maintainability"));
+        Assert.assertTrue(rule.cwe().isEmpty());
+        Assert.assertTrue(rule.owasp().isEmpty());
+        Assert.assertNull(rule.securitySeverity());
     }
 
     @Test(description = "test unused class fields rule")
@@ -156,6 +185,13 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.numericId(), 13);
         Assert.assertEquals(rule.description(), HARD_CODED_SECRET);
         Assert.assertEquals(rule.kind(), RuleKind.VULNERABILITY);
+        Assert.assertEquals(rule.level(), "warning");
+        Assert.assertNull(rule.precision());
+        Assert.assertEquals(rule.tags(), List.of("security", "external/cwe/cwe-798",
+                "external/owasp/owasp-a07-2025"));
+        Assert.assertEquals(rule.cwe(), List.of(798));
+        Assert.assertEquals(rule.owasp(), List.of("A07:2025"));
+        Assert.assertEquals(rule.securitySeverity(), Double.valueOf(8.6));
     }
 
     @Test(description = "test non configurable coded secret")
@@ -165,5 +201,12 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.numericId(), 14);
         Assert.assertEquals(rule.description(), NON_CONFIGURABLE_SECRET);
         Assert.assertEquals(rule.kind(), RuleKind.VULNERABILITY);
+        Assert.assertEquals(rule.level(), "warning");
+        Assert.assertNull(rule.precision());
+        Assert.assertEquals(rule.tags(), List.of("security", "external/cwe/cwe-798",
+                "external/owasp/owasp-a07-2025"));
+        Assert.assertEquals(rule.cwe(), List.of(798));
+        Assert.assertEquals(rule.owasp(), List.of("A07:2025"));
+        Assert.assertEquals(rule.securitySeverity(), Double.valueOf(6.5));
     }
 }

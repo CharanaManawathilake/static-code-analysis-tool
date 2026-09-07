@@ -425,6 +425,18 @@ public class ScanCmdTest extends BaseTest {
         Assert.assertTrue(
                 content.contains("\"bal-project-with-include-rule-configurations/main.bal\""),
                 "SARIF URI should be relative to workspace root for second sub-project");
+        Assert.assertTrue(content.contains("\"fullDescription\""), "SARIF rule should have a fullDescription");
+        Assert.assertTrue(content.contains("\"ruleKind\": \"CODE_SMELL\""),
+                "SARIF rule properties should include ruleKind");
+        Assert.assertTrue(content.contains("\"tags\""), "SARIF rule properties should include tags");
+        Assert.assertFalse(content.contains("\"precision\""), "SARIF rule properties should omit precision " +
+                "since rule 1's metadata does not specify one");
+        Assert.assertTrue(content.contains("\"ruleIndex\": 0"), "SARIF result should include ruleIndex");
+        Assert.assertTrue(content.contains("\"partialFingerprints\""), "SARIF result should include " +
+                "partialFingerprints");
+        Assert.assertTrue(content.contains("\"primaryLocationLineHash\""), "SARIF result should include " +
+                "primaryLocationLineHash");
+        Assert.assertTrue(content.contains("\"snippet\""), "SARIF region should include a source snippet");
     }
 
     @Test(description = "test scan command with exclude rules flag")
