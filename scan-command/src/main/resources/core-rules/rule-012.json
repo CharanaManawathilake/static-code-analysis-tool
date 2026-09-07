@@ -1,0 +1,11 @@
+{
+  "id": 12,
+  "kind": "CODE_SMELL",
+  "name": "Invalid range expression",
+  "severity": "LOW",
+  "description": "A range expression's bounds never produce any elements, making it dead code.",
+  "fullDescription": "A range expression whose lower bound is greater than (or, for the inclusive `...` operator, greater than or equal to) its upper bound never produces any elements, so any loop or operation over it is dead code.",
+  "tags": [
+    "pitfall"
+  ]
+}

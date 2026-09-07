@@ -425,6 +425,22 @@ public class ScanCmdTest extends BaseTest {
         Assert.assertTrue(
                 content.contains("\"bal-project-with-include-rule-configurations/main.bal\""),
                 "SARIF URI should be relative to workspace root for second sub-project");
+        Assert.assertTrue(content.contains("\"fullDescription\""), "SARIF rule should have a fullDescription");
+        Assert.assertTrue(content.contains("\"ruleKind\": \"CODE_SMELL\""),
+                "SARIF rule properties should include ruleKind");
+        Assert.assertTrue(content.contains("\"tags\""), "SARIF rule properties should include tags");
+        Assert.assertTrue(content.contains("\"external/cwe/cwe-248\""), "SARIF rule properties.tags should " +
+                "include a CWE tag generated from standards");
+        Assert.assertTrue(content.contains("\"external/owasp/owasp-a10-2025\""), "SARIF rule properties.tags " +
+                "should include an OWASP tag generated from standards");
+        Assert.assertFalse(content.contains("\"enabled\""), "SARIF defaultConfiguration should no longer " +
+                "include enabled");
+        Assert.assertTrue(content.contains("\"ruleIndex\": 0"), "SARIF result should include ruleIndex");
+        Assert.assertTrue(content.contains("\"partialFingerprints\""), "SARIF result should include " +
+                "partialFingerprints");
+        Assert.assertTrue(content.contains("\"primaryLocationLineHash/v1\""), "SARIF result should include " +
+                "the versioned primaryLocationLineHash/v1 fingerprint key");
+        Assert.assertTrue(content.contains("\"snippet\""), "SARIF region should include a source snippet");
     }
 
     @Test(description = "test scan command with exclude rules flag")

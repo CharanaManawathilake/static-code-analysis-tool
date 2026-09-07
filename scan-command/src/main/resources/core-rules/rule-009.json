@@ -1,0 +1,11 @@
+{
+  "id": 9,
+  "kind": "CODE_SMELL",
+  "name": "This operation always evaluates to the same value",
+  "severity": "LOW",
+  "description": "A binary operation always reduces to one of its own operands, making the operation itself redundant.",
+  "fullDescription": "This binary operation always reduces to the value of one of its own operands regardless of the other (e.g. `a || false`, `a && true`), making the operation itself redundant and the code harder to read.",
+  "tags": [
+    "trivial"
+  ]
+}

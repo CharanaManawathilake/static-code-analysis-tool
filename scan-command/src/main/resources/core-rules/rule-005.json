@@ -1,0 +1,11 @@
+{
+  "id": 5,
+  "kind": "CODE_SMELL",
+  "name": "Non isolated public class",
+  "severity": "LOW",
+  "description": "A public class is not marked `isolated`, limiting how safely its instances can be shared across concurrent code.",
+  "fullDescription": "A public class that is not marked `isolated` limits how safely its instances can be shared and accessed across concurrently executing isolated code or workers.",
+  "tags": [
+    "concurrency"
+  ]
+}

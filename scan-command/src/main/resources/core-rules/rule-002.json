@@ -1,0 +1,11 @@
+{
+  "id": 2,
+  "kind": "CODE_SMELL",
+  "name": "Unused function parameter",
+  "severity": "LOW",
+  "description": "A function parameter is declared but never used within the function body.",
+  "fullDescription": "A function parameter that is declared but never referenced in the function body adds noise, misleads readers about the function's behavior, and may indicate incomplete implementation or a leftover from refactoring.",
+  "tags": [
+    "unused"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": 11,
+  "kind": "CODE_SMELL",
+  "name": "Unused class private fields",
+  "severity": "LOW",
+  "description": "A private class field is declared but never read or written outside its own declaration.",
+  "fullDescription": "A private class field that is never read or written outside of its own declaration serves no purpose and should be removed, as it adds maintenance overhead without contributing to the class's behavior.",
+  "tags": [
+    "unused"
+  ]
+}

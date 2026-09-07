@@ -1,0 +1,11 @@
+{
+  "id": 6,
+  "kind": "CODE_SMELL",
+  "name": "Non isolated public object",
+  "severity": "LOW",
+  "description": "A public object type is not marked `isolated`, limiting how safely its instances can be shared across concurrent code.",
+  "fullDescription": "A public object constructor/type that is not marked `isolated` limits how safely its instances can be shared and accessed across concurrently executing isolated code or workers.",
+  "tags": [
+    "concurrency"
+  ]
+}
