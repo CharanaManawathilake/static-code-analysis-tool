@@ -71,7 +71,7 @@ public class CoreRuleOutputTest extends BaseTest {
                 balProject.resolve("main.bal").toString());
         String json = ScanUtils.convertIssuesToJsonString(List.of(issue));
 
-        Assert.assertTrue(json.contains("\"severity\": \"LOW\""),
+        Assert.assertTrue(json.contains("\"severity\": \"MEDIUM\""),
                 "severity should be present since rule 13's metadata specifies one");
         Assert.assertTrue(json.contains("\"standards\""),
                 "standards should be present since rule 13's metadata specifies CWE/OWASP coverage");

@@ -80,7 +80,7 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.name(), AVOID_CHECKPANIC);
         Assert.assertEquals(rule.kind(), RuleKind.CODE_SMELL);
         Assert.assertEquals(rule.severity(), Severity.LOW);
-        Assert.assertEquals(rule.tags(), List.of("maintainability", "error-handling"));
+        Assert.assertEquals(rule.tags(), List.of("error-handling"));
         Standards standards = rule.standards();
         Assert.assertNotNull(standards);
         Assert.assertEquals(standards.cwe(), List.of(248, 636));
@@ -97,7 +97,7 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.name(), UNUSED_FUNCTION_PARAMETER);
         Assert.assertEquals(rule.kind(), RuleKind.CODE_SMELL);
         Assert.assertEquals(rule.severity(), Severity.LOW);
-        Assert.assertEquals(rule.tags(), List.of("maintainability", "unused"));
+        Assert.assertEquals(rule.tags(), List.of("unused"));
         Assert.assertNull(rule.standards(), "rule 2 has no CWE/OWASP coverage");
     }
 
@@ -198,7 +198,7 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.numericId(), 13);
         Assert.assertEquals(rule.name(), HARD_CODED_SECRET);
         Assert.assertEquals(rule.kind(), RuleKind.VULNERABILITY);
-        Assert.assertEquals(rule.severity(), Severity.LOW);
+        Assert.assertEquals(rule.severity(), Severity.MEDIUM);
         Assert.assertEquals(rule.tags(), List.of("security", "secrets", "credentials"));
         Standards standards = rule.standards();
         Assert.assertEquals(standards.cwe(), List.of(798));
@@ -213,7 +213,7 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.numericId(), 14);
         Assert.assertEquals(rule.name(), NON_CONFIGURABLE_SECRET);
         Assert.assertEquals(rule.kind(), RuleKind.VULNERABILITY);
-        Assert.assertEquals(rule.severity(), Severity.LOW);
+        Assert.assertEquals(rule.severity(), Severity.MEDIUM);
         Assert.assertEquals(rule.tags(), List.of("security", "secrets", "configurable"));
         Standards standards = rule.standards();
         Assert.assertEquals(standards.cwe(), List.of(798));

@@ -18,7 +18,6 @@
       "helpUri": "https://central.ballerina.io/ballerina/tool_scan/0.12.0#ballerina1---avoid-checkpanic",
       "severity": "LOW",
       "tags": [
-        "maintainability",
         "error-handling"
       ],
       "standards": {
