@@ -6,7 +6,9 @@
   "description": "A secret is assigned a fixed value instead of being exposed as a configurable one.",
   "fullDescription": "A secret that is assigned a fixed value rather than being exposed as a configurable value forces the same secret to be reused across environments and prevents it from being rotated or overridden without modifying and redeploying the code.",
   "tags": [
-    "security"
+    "security",
+    "secrets",
+    "configurable"
   ],
   "standards": {
     "cwe": [

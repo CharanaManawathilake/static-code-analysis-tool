@@ -6,7 +6,7 @@
   "description": "A variable is assigned to itself, which has no effect and usually signals a mistake.",
   "fullDescription": "Assigning a variable to itself has no effect and is usually a mistake, such as a typo where a different variable or field was intended on one side of the assignment.",
   "tags": [
-    "maintainability"
+    "trivial"
   ],
   "standards": {
     "cwe": [

@@ -1,0 +1,221 @@
+> Task :scan-command:compileJava UP-TO-DATE
+> Task :scan-command:processResources
+> Task :scan-command:classes
+> Task :scan-command:jar
+> Task :scan-command:compileTestJava UP-TO-DATE
+> Task :scan-command:processTestResources
+> Task :scan-command:testClasses
+> Task :test-compiler-plugins:ballerina-plugin:compileJava UP-TO-DATE
+> Task :test-compiler-plugins:ballerina-plugin:processResources UP-TO-DATE
+> Task :test-compiler-plugins:ballerina-plugin:classes UP-TO-DATE
+> Task :test-compiler-plugins:ballerina-plugin:jar UP-TO-DATE
+
+> Task :test-compiler-plugins:ballerina-plugin:downloadCheckstyleRuleFiles UP-TO-DATE
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/checkstyle.xml
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/suppressions.xml
+
+> Task :test-compiler-plugins:ballerina-plugin:buildCompilerPlugin
+Compiling source
+	ballerina/example_module_static_code_analyzer:0.1.0
+
+Creating bala
+	target\bala\ballerina-example_module_static_code_analyzer-java21-0.1.0.bala
+Successfully pushed target\bala\ballerina-example_module_static_code_analyzer-java21-0.1.0.bala to 'local' repository.
+Successfully build and pushed the package ballerina/example_module_static_code_analyzer to the local repository
+Successfully cleaned the .ballerina/cache* directories
+Successfully copied package ballerina/example_module_static_code_analyzer from local/bala the central.ballerina.io/bala directory
+
+> Task :test-compiler-plugins:ballerina-plugin:assemble UP-TO-DATE
+> Task :test-compiler-plugins:ballerina-plugin:checkstyleMain UP-TO-DATE
+> Task :test-compiler-plugins:ballerina-plugin:compileTestJava NO-SOURCE
+> Task :test-compiler-plugins:ballerina-plugin:processTestResources NO-SOURCE
+> Task :test-compiler-plugins:ballerina-plugin:testClasses UP-TO-DATE
+> Task :test-compiler-plugins:ballerina-plugin:checkstyleTest NO-SOURCE
+> Task :test-compiler-plugins:ballerina-plugin:spotbugsMain UP-TO-DATE
+> Task :test-compiler-plugins:ballerina-plugin:spotbugsTest NO-SOURCE
+> Task :test-compiler-plugins:ballerina-plugin:test NO-SOURCE
+> Task :test-compiler-plugins:ballerina-plugin:check UP-TO-DATE
+> Task :test-compiler-plugins:ballerina-plugin:build
+
+> Task :test-compiler-plugins:ballerinax-plugin:downloadCheckstyleRuleFiles UP-TO-DATE
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/checkstyle.xml
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/suppressions.xml
+
+> Task :test-compiler-plugins:ballerinax-plugin:compileJava UP-TO-DATE
+> Task :test-compiler-plugins:ballerinax-plugin:processResources UP-TO-DATE
+> Task :test-compiler-plugins:ballerinax-plugin:classes UP-TO-DATE
+> Task :test-compiler-plugins:ballerinax-plugin:jar UP-TO-DATE
+> Task :test-compiler-plugins:ballerinax-plugin:assemble UP-TO-DATE
+
+> Task :test-compiler-plugins:ballerinax-plugin:buildCompilerPlugin
+Compiling source
+	ballerinax/example_module_static_code_analyzer:0.1.0
+
+Creating bala
+	target\bala\ballerinax-example_module_static_code_analyzer-java21-0.1.0.bala
+Successfully pushed target\bala\ballerinax-example_module_static_code_analyzer-java21-0.1.0.bala to 'local' repository.
+Successfully build and pushed the package ballerinax/example_module_static_code_analyzer to the local repository
+
+> Task :test-compiler-plugins:ballerinax-plugin:checkstyleMain UP-TO-DATE
+> Task :test-compiler-plugins:ballerinax-plugin:compileTestJava NO-SOURCE
+> Task :test-compiler-plugins:ballerinax-plugin:processTestResources NO-SOURCE
+> Task :test-compiler-plugins:ballerinax-plugin:testClasses UP-TO-DATE
+> Task :test-compiler-plugins:ballerinax-plugin:checkstyleTest NO-SOURCE
+> Task :test-compiler-plugins:ballerinax-plugin:spotbugsMain UP-TO-DATE
+> Task :test-compiler-plugins:ballerinax-plugin:spotbugsTest NO-SOURCE
+> Task :test-compiler-plugins:ballerinax-plugin:test NO-SOURCE
+> Task :test-compiler-plugins:ballerinax-plugin:check UP-TO-DATE
+> Task :test-compiler-plugins:ballerinax-plugin:build
+
+> Task :test-compiler-plugins:exampleOrg-plugin:downloadCheckstyleRuleFiles UP-TO-DATE
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/checkstyle.xml
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/suppressions.xml
+
+> Task :test-compiler-plugins:exampleOrg-plugin:compileJava UP-TO-DATE
+> Task :test-compiler-plugins:exampleOrg-plugin:processResources UP-TO-DATE
+> Task :test-compiler-plugins:exampleOrg-plugin:classes UP-TO-DATE
+> Task :test-compiler-plugins:exampleOrg-plugin:jar UP-TO-DATE
+> Task :test-compiler-plugins:exampleOrg-plugin:assemble UP-TO-DATE
+
+> Task :test-compiler-plugins:exampleOrg-plugin:buildCompilerPlugin
+Compiling source
+	exampleOrg/example_module_static_code_analyzer:0.1.0
+
+Creating bala
+	target\bala\exampleOrg-example_module_static_code_analyzer-java21-0.1.0.bala
+Successfully pushed target\bala\exampleOrg-example_module_static_code_analyzer-java21-0.1.0.bala to 'local' repository.
+Successfully build and pushed the package exampleOrg/example_module_static_code_analyzer to the local repository
+Successfully cleaned the .ballerina/cache* directories
+Successfully copied package exampleOrg/example_module_static_code_analyzer from local/bala the central.ballerina.io/bala directory
+
+> Task :test-compiler-plugins:exampleOrg-plugin:checkstyleMain UP-TO-DATE
+> Task :test-compiler-plugins:exampleOrg-plugin:compileTestJava NO-SOURCE
+> Task :test-compiler-plugins:exampleOrg-plugin:processTestResources NO-SOURCE
+> Task :test-compiler-plugins:exampleOrg-plugin:testClasses UP-TO-DATE
+> Task :test-compiler-plugins:exampleOrg-plugin:checkstyleTest NO-SOURCE
+> Task :test-compiler-plugins:exampleOrg-plugin:spotbugsMain UP-TO-DATE
+> Task :test-compiler-plugins:exampleOrg-plugin:spotbugsTest NO-SOURCE
+> Task :test-compiler-plugins:exampleOrg-plugin:test NO-SOURCE
+> Task :test-compiler-plugins:exampleOrg-plugin:check UP-TO-DATE
+> Task :test-compiler-plugins:exampleOrg-plugin:build
+
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:downloadCheckstyleRuleFiles UP-TO-DATE
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/checkstyle.xml
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/suppressions.xml
+
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:compileJava UP-TO-DATE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:processResources UP-TO-DATE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:classes UP-TO-DATE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:jar UP-TO-DATE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:assemble UP-TO-DATE
+
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:buildCompilerPlugin
+Compiling source
+	invalid/invalid_module_ruleformat_static_code_analyzer:0.1.0
+
+Creating bala
+	target\bala\invalid-invalid_module_ruleformat_static_code_analyzer-java21-0.1.0.bala
+Successfully pushed target\bala\invalid-invalid_module_ruleformat_static_code_analyzer-java21-0.1.0.bala to 'local' repository.
+Successfully build and pushed the package invalid/invalid_module_ruleformat_static_code_analyzer to the local repository
+Successfully cleaned the .ballerina/cache* directories
+Successfully copied package invalid/invalid_module_ruleformat_static_code_analyzer from local/bala the central.ballerina.io/bala directory
+
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:checkstyleMain UP-TO-DATE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:compileTestJava NO-SOURCE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:processTestResources NO-SOURCE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:testClasses UP-TO-DATE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:checkstyleTest NO-SOURCE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:spotbugsMain UP-TO-DATE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:spotbugsTest NO-SOURCE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:test NO-SOURCE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:check UP-TO-DATE
+> Task :test-compiler-plugins:invalid-ruleformat-plugin:build
+
+> Task :test-compiler-plugins:invalid-rulekind-plugin:downloadCheckstyleRuleFiles UP-TO-DATE
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/checkstyle.xml
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/suppressions.xml
+
+> Task :test-compiler-plugins:invalid-rulekind-plugin:compileJava UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:processResources UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:classes UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:jar UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:assemble UP-TO-DATE
+
+> Task :test-compiler-plugins:invalid-rulekind-plugin:buildCompilerPlugin
+Compiling source
+	invalid/invalid_module_rulekind_static_code_analyzer:0.1.0
+
+Creating bala
+	target\bala\invalid-invalid_module_rulekind_static_code_analyzer-java21-0.1.0.bala
+Successfully pushed target\bala\invalid-invalid_module_rulekind_static_code_analyzer-java21-0.1.0.bala to 'local' repository.
+Successfully build and pushed the package invalid/invalid_module_rulekind_static_code_analyzer to the local repository
+Successfully cleaned the .ballerina/cache* directories
+Successfully copied package invalid/invalid_module_rulekind_static_code_analyzer from local/bala the central.ballerina.io/bala directory
+
+> Task :test-compiler-plugins:invalid-rulekind-plugin:checkstyleMain UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:compileTestJava NO-SOURCE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:processTestResources NO-SOURCE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:testClasses UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:checkstyleTest NO-SOURCE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:spotbugsMain UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:spotbugsTest NO-SOURCE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:test NO-SOURCE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:check UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rulekind-plugin:build
+
+> Task :test-compiler-plugins:invalid-rules-plugin:downloadCheckstyleRuleFiles UP-TO-DATE
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/checkstyle.xml
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/suppressions.xml
+
+> Task :test-compiler-plugins:invalid-rules-plugin:compileJava UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rules-plugin:processResources UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rules-plugin:classes UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rules-plugin:jar UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rules-plugin:assemble UP-TO-DATE
+
+> Task :test-compiler-plugins:invalid-rules-plugin:buildCompilerPlugin
+Compiling source
+	invalid/invalid_module_rules_static_code_analyzer:0.1.0
+
+Creating bala
+	target\bala\invalid-invalid_module_rules_static_code_analyzer-java21-0.1.0.bala
+Successfully pushed target\bala\invalid-invalid_module_rules_static_code_analyzer-java21-0.1.0.bala to 'local' repository.
+Successfully build and pushed the package invalid/invalid_module_rules_static_code_analyzer to the local repository
+Successfully cleaned the .ballerina/cache* directories
+Successfully copied package invalid/invalid_module_rules_static_code_analyzer from local/bala the central.ballerina.io/bala directory
+
+> Task :test-compiler-plugins:invalid-rules-plugin:checkstyleMain UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rules-plugin:compileTestJava NO-SOURCE
+> Task :test-compiler-plugins:invalid-rules-plugin:processTestResources NO-SOURCE
+> Task :test-compiler-plugins:invalid-rules-plugin:testClasses UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rules-plugin:checkstyleTest NO-SOURCE
+> Task :test-compiler-plugins:invalid-rules-plugin:spotbugsMain UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rules-plugin:spotbugsTest NO-SOURCE
+> Task :test-compiler-plugins:invalid-rules-plugin:test NO-SOURCE
+> Task :test-compiler-plugins:invalid-rules-plugin:check UP-TO-DATE
+> Task :test-compiler-plugins:invalid-rules-plugin:build
+
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:downloadCheckstyleRuleFiles UP-TO-DATE
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/checkstyle.xml
+Download https://raw.githubusercontent.com/wso2/code-quality-tools/v1.4/checkstyle/jdk-17/suppressions.xml
+
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:compileJava UP-TO-DATE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:processResources UP-TO-DATE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:classes UP-TO-DATE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:jar UP-TO-DATE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:assemble UP-TO-DATE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:checkstyleMain UP-TO-DATE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:compileTestJava NO-SOURCE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:processTestResources NO-SOURCE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:testClasses UP-TO-DATE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:checkstyleTest NO-SOURCE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:spotbugsMain UP-TO-DATE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:spotbugsTest NO-SOURCE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:test NO-SOURCE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:check UP-TO-DATE
+> Task :test-static-code-analysis-platform-plugins:exampleOrg-static-code-analysis-platform-plugin:build UP-TO-DATE
+
+> Task :scan-command:test
+
+ballerina-test-suite > ballerina-scan-command-test-suite > io.ballerina.scan.internal.ScanCmdTest > testScanCommandInWorkspace FAILED
+    java.lang.AssertionError at ScanCmdTest.java:403

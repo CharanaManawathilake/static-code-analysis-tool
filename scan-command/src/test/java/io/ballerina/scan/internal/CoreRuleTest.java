@@ -80,7 +80,7 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.name(), AVOID_CHECKPANIC);
         Assert.assertEquals(rule.kind(), RuleKind.CODE_SMELL);
         Assert.assertEquals(rule.severity(), Severity.LOW);
-        Assert.assertEquals(rule.tags(), List.of("maintainability"));
+        Assert.assertEquals(rule.tags(), List.of("maintainability", "error-handling"));
         Standards standards = rule.standards();
         Assert.assertNotNull(standards);
         Assert.assertEquals(standards.cwe(), List.of(248, 636));
@@ -97,7 +97,7 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.name(), UNUSED_FUNCTION_PARAMETER);
         Assert.assertEquals(rule.kind(), RuleKind.CODE_SMELL);
         Assert.assertEquals(rule.severity(), Severity.LOW);
-        Assert.assertEquals(rule.tags(), List.of("maintainability"));
+        Assert.assertEquals(rule.tags(), List.of("maintainability", "unused"));
         Assert.assertNull(rule.standards(), "rule 2 has no CWE/OWASP coverage");
     }
 
@@ -199,7 +199,7 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.name(), HARD_CODED_SECRET);
         Assert.assertEquals(rule.kind(), RuleKind.VULNERABILITY);
         Assert.assertEquals(rule.severity(), Severity.LOW);
-        Assert.assertEquals(rule.tags(), List.of("security"));
+        Assert.assertEquals(rule.tags(), List.of("security", "secrets", "credentials"));
         Standards standards = rule.standards();
         Assert.assertEquals(standards.cwe(), List.of(798));
         Assert.assertEquals(standards.owasp().get(0).year(), 2025);
@@ -214,7 +214,7 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.name(), NON_CONFIGURABLE_SECRET);
         Assert.assertEquals(rule.kind(), RuleKind.VULNERABILITY);
         Assert.assertEquals(rule.severity(), Severity.LOW);
-        Assert.assertEquals(rule.tags(), List.of("security"));
+        Assert.assertEquals(rule.tags(), List.of("security", "secrets", "configurable"));
         Standards standards = rule.standards();
         Assert.assertEquals(standards.cwe(), List.of(798));
         Assert.assertEquals(standards.owasp().get(0).year(), 2025);

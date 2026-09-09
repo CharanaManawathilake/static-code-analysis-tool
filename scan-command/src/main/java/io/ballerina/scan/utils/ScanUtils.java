@@ -380,8 +380,8 @@ public final class ScanUtils {
         }
         return switch (rule.kind()) {
             case BUG -> "error";
-            case CODE_SMELL -> "note";
             case VULNERABILITY -> "warning";
+            case CODE_SMELL -> "note";
         };
     }
 
