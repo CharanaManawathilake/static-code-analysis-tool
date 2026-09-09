@@ -28,8 +28,10 @@ import io.ballerina.projects.ProjectKind;
 import io.ballerina.projects.TomlDocument;
 import io.ballerina.projects.internal.model.Target;
 import io.ballerina.scan.Issue;
+import io.ballerina.scan.OwaspCoverage;
 import io.ballerina.scan.Rule;
-import io.ballerina.scan.RuleKind;
+import io.ballerina.scan.Severity;
+import io.ballerina.scan.Standards;
 import io.ballerina.scan.internal.IssueImpl;
 import io.ballerina.scan.internal.RuleFactory;
 import io.ballerina.toml.api.Toml;
@@ -59,6 +61,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -173,9 +176,8 @@ public final class ScanUtils {
             String snippetText = extractSnippet(issueImpl.filePath(), issueImpl.location().textRange(),
                     fileContentCache);
             if (snippetText != null) {
-                JsonObject snippet = new JsonObject();
-                snippet.addProperty("text", snippetText);
-                issuesAsJson.get(i).getAsJsonObject().getAsJsonObject("location").add("snippet", snippet);
+                issuesAsJson.get(i).getAsJsonObject().getAsJsonObject("location")
+                        .addProperty("snippet", snippetText);
             }
         }
 
@@ -255,7 +257,7 @@ public final class ScanUtils {
 
             result.addProperty("ruleId", rule.id());
             result.addProperty("ruleIndex", ruleIndexMap.get(rule.id()));
-            result.addProperty("level", rule.level() != null ? rule.level() : mapRuleKindToSarifLevel(rule.kind()));
+            result.addProperty("level", resolveSarifLevel(rule));
 
             JsonObject message = new JsonObject();
             message.addProperty("text", rule.description());
@@ -295,7 +297,7 @@ public final class ScanUtils {
             result.add("locations", locations);
 
             JsonObject partialFingerprints = new JsonObject();
-            partialFingerprints.addProperty("primaryLocationLineHash",
+            partialFingerprints.addProperty("primaryLocationLineHash/v1",
                     computeLineHash(issueImpl.filePath(), lineRange.startLine().line(), fileLinesCache,
                             lineHashOccurrences));
             result.add("partialFingerprints", partialFingerprints);
@@ -312,7 +314,7 @@ public final class ScanUtils {
 
     /**
      * Builds the SARIF rule object for a single {@link Rule}, including the enriched metadata
-     * (full description, tags, precision, security-severity, ruleKind) when the rule carries it.
+     * (full description, tags, CWE/OWASP coverage, ruleKind) when the rule carries it.
      *
      * @param rule the rule to build a SARIF rule object for
      * @return the SARIF rule object
@@ -322,7 +324,7 @@ public final class ScanUtils {
         obj.addProperty("id", rule.id());
 
         String helpUri = rule.helpUri() != null ? rule.helpUri()
-                : RuleFactory.buildHelpUri(rule.id(), rule.description());
+                : RuleFactory.buildHelpUri(rule.id(), rule.name());
         obj.addProperty("helpUri", helpUri);
 
         JsonObject shortDescription = new JsonObject();
@@ -335,30 +337,71 @@ public final class ScanUtils {
             obj.add("fullDescription", fullDescription);
         }
 
-        String level = rule.level() != null ? rule.level() : mapRuleKindToSarifLevel(rule.kind());
         JsonObject defaultConfiguration = new JsonObject();
-        defaultConfiguration.addProperty("level", level);
-        if (rule.enabled() != null) {
-            defaultConfiguration.addProperty("enabled", rule.enabled());
-        }
+        defaultConfiguration.addProperty("level", resolveSarifLevel(rule));
         obj.add("defaultConfiguration", defaultConfiguration);
 
         JsonObject properties = new JsonObject();
         properties.addProperty("ruleKind", rule.kind().toString());
-        if (rule.tags() != null && !rule.tags().isEmpty()) {
+        List<String> sarifTags = buildSarifTags(rule);
+        if (!sarifTags.isEmpty()) {
             JsonArray tags = new JsonArray();
-            rule.tags().forEach(tags::add);
+            sarifTags.forEach(tags::add);
             properties.add("tags", tags);
-        }
-        if (rule.precision() != null) {
-            properties.addProperty("precision", rule.precision());
-        }
-        if (rule.securitySeverity() != null) {
-            properties.addProperty("security-severity", String.valueOf(rule.securitySeverity()));
         }
         obj.add("properties", properties);
 
         return obj;
+    }
+
+    /**
+     * Resolves the SARIF reporting level for a rule from its {@link Severity}: {@code BLOCKER}/
+     * {@code HIGH} to {@code error}, {@code MEDIUM} to {@code warning}, {@code LOW} to
+     * {@code note}, {@code INFO} to {@code none}. A rule with no {@link Severity} (i.e. an
+     * external/plugin rule that predates this schema) resolves to the literal default
+     * {@code none} - this is never derived from {@link io.ballerina.scan.RuleKind}.
+     *
+     * @param rule the rule to resolve a SARIF level for
+     * @return the resolved SARIF level
+     */
+    private static String resolveSarifLevel(Rule rule) {
+        Severity severity = rule.severity();
+        if (severity == null) {
+            return "none";
+        }
+        return switch (severity) {
+            case BLOCKER, HIGH -> "error";
+            case MEDIUM -> "warning";
+            case LOW -> "note";
+            case INFO -> "none";
+        };
+    }
+
+    /**
+     * Builds the full SARIF {@code properties.tags} list for a rule: its general {@link Rule#tags()}
+     * plus {@code external/cwe/cwe-*} and {@code external/owasp/owasp-a*-*} entries generated from
+     * {@link Rule#standards()}.
+     *
+     * @param rule the rule to build SARIF tags for
+     * @return the combined tag list, or an empty list when the rule has neither
+     */
+    private static List<String> buildSarifTags(Rule rule) {
+        List<String> sarifTags = new ArrayList<>();
+        if (rule.tags() != null) {
+            sarifTags.addAll(rule.tags());
+        }
+        Standards standards = rule.standards();
+        if (standards != null) {
+            for (Integer cwe : standards.cwe()) {
+                sarifTags.add("external/cwe/cwe-" + cwe);
+            }
+            for (OwaspCoverage coverage : standards.owasp()) {
+                for (Integer category : coverage.categories()) {
+                    sarifTags.add(String.format("external/owasp/owasp-a%02d-%d", category, coverage.year()));
+                }
+            }
+        }
+        return sarifTags;
     }
 
     /**
@@ -438,20 +481,6 @@ public final class ScanUtils {
         } catch (NoSuchAlgorithmException ex) {
             return Integer.toHexString(text.hashCode());
         }
-    }
-
-    /**
-     * Maps RuleKind to SARIF level.
-     *
-     * @param ruleKind the rule kind
-     * @return corresponding SARIF level
-     */
-    private static String mapRuleKindToSarifLevel(RuleKind ruleKind) {
-        return switch (ruleKind) {
-            case BUG -> "error";
-            case CODE_SMELL -> "note";
-            case VULNERABILITY -> "warning";
-        };
     }
 
     /**
@@ -954,7 +983,7 @@ public final class ScanUtils {
         for (Rule rule : rules) {
             maxRuleIDLength = Math.max(maxRuleIDLength, rule.id().length());
             maxSeverityLength = Math.max(maxSeverityLength, rule.kind().toString().length());
-            maxDescriptionLength = Math.max(maxDescriptionLength, rule.description().length());
+            maxDescriptionLength = Math.max(maxDescriptionLength, rule.name().length());
         }
 
         String format = "\t%-" + maxRuleIDLength + "s | %-" + maxSeverityLength + "s | %-" + maxDescriptionLength
@@ -968,7 +997,7 @@ public final class ScanUtils {
 
         sortRules(rules);
         for (Rule rule : rules) {
-            String formattedLine = String.format(format, rule.id(), rule.kind().toString(), rule.description());
+            String formattedLine = String.format(format, rule.id(), rule.kind().toString(), rule.name());
             outputStream.println(formattedLine.stripTrailing());
         }
     }

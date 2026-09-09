@@ -19,6 +19,8 @@
 package io.ballerina.scan.internal;
 
 import io.ballerina.scan.RuleKind;
+import io.ballerina.scan.Severity;
+import io.ballerina.scan.Standards;
 
 import java.util.List;
 
@@ -32,29 +34,31 @@ import java.util.List;
 final class RuleMetadata {
 
     private final int numericId;
+    private final String name;
     private final String description;
     private final String fullDescription;
     private final RuleKind ruleKind;
+    private final Severity severity;
     private final List<String> tags;
-    private final List<Integer> cwe;
-    private final List<String> owasp;
-    private final String precision;
-    private final Double securitySeverity;
+    private final Standards standards;
 
     private RuleMetadata(Builder builder) {
         this.numericId = builder.numericId;
+        this.name = builder.name;
         this.description = builder.description;
         this.fullDescription = builder.fullDescription;
         this.ruleKind = builder.ruleKind;
+        this.severity = builder.severity;
         this.tags = builder.tags;
-        this.cwe = builder.cwe;
-        this.owasp = builder.owasp;
-        this.precision = builder.precision;
-        this.securitySeverity = builder.securitySeverity;
+        this.standards = builder.standards;
     }
 
     int numericId() {
         return numericId;
+    }
+
+    String name() {
+        return name;
     }
 
     String description() {
@@ -69,24 +73,16 @@ final class RuleMetadata {
         return ruleKind;
     }
 
+    Severity severity() {
+        return severity;
+    }
+
     List<String> tags() {
         return tags;
     }
 
-    List<Integer> cwe() {
-        return cwe;
-    }
-
-    List<String> owasp() {
-        return owasp;
-    }
-
-    String precision() {
-        return precision;
-    }
-
-    Double securitySeverity() {
-        return securitySeverity;
+    Standards standards() {
+        return standards;
     }
 
     static Builder builder() {
@@ -95,17 +91,21 @@ final class RuleMetadata {
 
     static final class Builder {
         private int numericId;
+        private String name;
         private String description;
         private String fullDescription;
         private RuleKind ruleKind;
+        private Severity severity;
         private List<String> tags;
-        private List<Integer> cwe;
-        private List<String> owasp;
-        private String precision;
-        private Double securitySeverity;
+        private Standards standards;
 
         Builder numericId(int numericId) {
             this.numericId = numericId;
+            return this;
+        }
+
+        Builder name(String name) {
+            this.name = name;
             return this;
         }
 
@@ -124,28 +124,18 @@ final class RuleMetadata {
             return this;
         }
 
+        Builder severity(Severity severity) {
+            this.severity = severity;
+            return this;
+        }
+
         Builder tags(List<String> tags) {
             this.tags = tags;
             return this;
         }
 
-        Builder cwe(List<Integer> cwe) {
-            this.cwe = cwe;
-            return this;
-        }
-
-        Builder owasp(List<String> owasp) {
-            this.owasp = owasp;
-            return this;
-        }
-
-        Builder precision(String precision) {
-            this.precision = precision;
-            return this;
-        }
-
-        Builder securitySeverity(Double securitySeverity) {
-            this.securitySeverity = securitySeverity;
+        Builder standards(Standards standards) {
+            this.standards = standards;
             return this;
         }
 

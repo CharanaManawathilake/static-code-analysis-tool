@@ -22,6 +22,8 @@ import io.ballerina.projects.Project;
 import io.ballerina.projects.directory.ProjectLoader;
 import io.ballerina.scan.BaseTest;
 import io.ballerina.scan.Issue;
+import io.ballerina.scan.Rule;
+import io.ballerina.scan.RuleKind;
 import io.ballerina.scan.Source;
 import io.ballerina.scan.utils.ScanUtils;
 import org.testng.Assert;
@@ -45,63 +47,71 @@ public class CoreRuleOutputTest extends BaseTest {
     // Location known to fall within bal-project-with-analyzer-configurations/main.bal.
     private final BLangDiagnosticLocation location = new BLangDiagnosticLocation("main.bal", 20, 20, 17, 39, 777, 22);
 
-    @Test(description = "test that precision is omitted, cwe/owasp never appear, and securitySeverity is present "
+    @Test(description = "test that standards is omitted, tags stay general, and severity/snippet are present "
             + "in the Ballerina JSON output")
     void testOptionalFieldsOmittedFromJsonOutput() {
-        Issue issue = new IssueImpl(location, CoreRule.AVOID_CHECKPANIC.rule(), Source.BUILT_IN, "main.bal",
+        // Rule 2 has no CWE/OWASP mapping, so it is the one with no "standards" to report.
+        Issue issue = new IssueImpl(location, CoreRule.UNUSED_FUNCTION_PARAMETER.rule(), Source.BUILT_IN, "main.bal",
                 balProject.resolve("main.bal").toString());
         String json = ScanUtils.convertIssuesToJsonString(List.of(issue));
 
-        Assert.assertFalse(json.contains("\"precision\""),
-                "precision should be omitted since rule 1's metadata does not specify one");
-        Assert.assertTrue(json.contains("\"securitySeverity\": 5.3"),
-                "securitySeverity should be present since every core rule now specifies one");
-        Assert.assertFalse(json.contains("\"cwe\""),
-                "cwe should never appear in the Ballerina JSON output (redundant with tags)");
-        Assert.assertFalse(json.contains("\"owasp\""),
-                "owasp should never appear in the Ballerina JSON output (redundant with tags)");
+        Assert.assertFalse(json.contains("\"standards\""),
+                "standards should be omitted since rule 2's metadata does not specify any CWE/OWASP coverage");
+        Assert.assertTrue(json.contains("\"severity\": \"LOW\""),
+                "severity should be present since every core rule now specifies one");
         Assert.assertTrue(json.contains("\"tags\""), "tags should still be present");
-        Assert.assertTrue(json.contains("\"fullDescription\""), "fullDescription should still be present");
-        Assert.assertTrue(json.contains("\"snippet\""), "snippet should be present for a resolvable location");
+        Assert.assertTrue(json.contains("\"details\""),
+                "fullDescription should be serialized as \"details\" in the Ballerina JSON output");
+        Assert.assertTrue(json.contains("\"snippet\": \""), "snippet should be a plain string in Ballerina JSON");
     }
 
-    @Test(description = "test that securitySeverity is included in the Ballerina JSON output when specified")
-    void testSecuritySeverityIncludedInJsonOutputWhenSpecified() {
+    @Test(description = "test that standards is included in the Ballerina JSON output when specified")
+    void testStandardsIncludedInJsonOutputWhenSpecified() {
         Issue issue = new IssueImpl(location, CoreRule.HARD_CODED_SECRET.rule(), Source.BUILT_IN, "main.bal",
                 balProject.resolve("main.bal").toString());
         String json = ScanUtils.convertIssuesToJsonString(List.of(issue));
 
-        Assert.assertTrue(json.contains("\"securitySeverity\": 8.6"),
-                "securitySeverity should be present since rule 13's metadata specifies one");
-        Assert.assertFalse(json.contains("\"precision\""),
-                "precision should still be omitted since rule 13's metadata does not specify one");
+        Assert.assertTrue(json.contains("\"severity\": \"LOW\""),
+                "severity should be present since rule 13's metadata specifies one");
+        Assert.assertTrue(json.contains("\"standards\""),
+                "standards should be present since rule 13's metadata specifies CWE/OWASP coverage");
+        Assert.assertTrue(json.contains("\"cwe\": ["), "standards.cwe should be present");
+        Assert.assertTrue(json.contains("\"owasp\": ["), "standards.owasp should be present");
+        Assert.assertFalse(json.contains("\"external/cwe"),
+                "Ballerina JSON tags should not embed external/cwe entries (that's SARIF-only)");
     }
 
-    @Test(description = "test that precision is omitted and security-severity is present in the SARIF output")
-    void testOptionalFieldsOmittedFromSarifOutput() throws Exception {
+    @Test(description = "test that standards-derived tags are present in the SARIF output but not in tags")
+    void testStandardsDerivedTagsInSarifOutput() throws Exception {
         Project project = ProjectLoader.load(balProject).project();
         Issue issue = new IssueImpl(location, CoreRule.AVOID_CHECKPANIC.rule(), Source.BUILT_IN, "main.bal",
                 balProject.resolve("main.bal").toString());
         String sarif = ScanUtils.convertIssuesToSarifString(List.of(issue), project);
 
-        Assert.assertFalse(sarif.contains("\"precision\""),
-                "SARIF properties should omit precision since rule 1's metadata does not specify one");
-        Assert.assertTrue(sarif.contains("\"security-severity\": \"5.3\""),
-                "SARIF properties should include security-severity since every core rule now specifies one");
-        Assert.assertTrue(sarif.contains("\"tags\""), "SARIF properties should still include tags");
-        Assert.assertTrue(sarif.contains("\"snippet\""), "SARIF region should include a source snippet");
+        Assert.assertTrue(sarif.contains("\"external/cwe/cwe-248\""),
+                "SARIF properties.tags should include a generated CWE tag");
+        Assert.assertTrue(sarif.contains("\"external/cwe/cwe-636\""),
+                "SARIF properties.tags should include a generated CWE tag");
+        Assert.assertTrue(sarif.contains("\"external/owasp/owasp-a10-2025\""),
+                "SARIF properties.tags should include a generated OWASP tag");
+        Assert.assertTrue(sarif.contains("\"level\": \"note\""),
+                "rule 1's LOW severity should resolve to the SARIF level note");
+        Assert.assertFalse(sarif.contains("\"enabled\""), "defaultConfiguration should no longer include enabled");
+        Assert.assertTrue(sarif.contains("\"snippet\": {"), "SARIF region.snippet should stay a nested object");
+        Assert.assertTrue(sarif.contains("\"primaryLocationLineHash/v1\""),
+                "the fingerprint key should carry the /v1 suffix");
     }
 
-    @Test(description = "test that security-severity is included in the SARIF output when specified")
-    void testSecuritySeverityIncludedInSarifOutputWhenSpecified() throws Exception {
+    @Test(description = "test that a rule with no severity resolves to the literal SARIF level none")
+    void testMissingSeverityResolvesToNoneLevel() throws Exception {
         Project project = ProjectLoader.load(balProject).project();
-        Issue issue = new IssueImpl(location, CoreRule.HARD_CODED_SECRET.rule(), Source.BUILT_IN, "main.bal",
+        Rule externalRule = RuleFactory.createRule(101, "external rule 101", RuleKind.BUG);
+        Issue issue = new IssueImpl(location, externalRule, Source.EXTERNAL, "main.bal",
                 balProject.resolve("main.bal").toString());
         String sarif = ScanUtils.convertIssuesToSarifString(List.of(issue), project);
 
-        Assert.assertTrue(sarif.contains("\"security-severity\": \"8.6\""),
-                "SARIF properties should include security-severity since rule 13's metadata specifies one");
-        Assert.assertFalse(sarif.contains("\"precision\""),
-                "SARIF properties should still omit precision since rule 13's metadata does not specify one");
+        Assert.assertTrue(sarif.contains("\"level\": \"none\""),
+                "a rule with no severity should default to the literal SARIF level none, "
+                        + "never derived from RuleKind");
     }
 }

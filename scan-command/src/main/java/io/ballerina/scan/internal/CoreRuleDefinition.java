@@ -19,6 +19,8 @@
 package io.ballerina.scan.internal;
 
 import io.ballerina.scan.RuleKind;
+import io.ballerina.scan.Severity;
+import io.ballerina.scan.Standards;
 
 import java.util.List;
 
@@ -32,25 +34,26 @@ final class CoreRuleDefinition {
 
     private int id;
     private String kind;
+    private String name;
     private String description;
     private String fullDescription;
-    private String precision;
+    private String severity;
     private List<String> tags;
-    private List<Integer> cwe;
-    private List<String> owasp;
-    private Double securitySeverity;
+    private Standards standards;
 
     RuleMetadata toMetadata() {
+        // name/description/fullDescription are passed through exactly as authored (nullable) - no
+        // cross-field fallback here, so a rule that omits one of these doesn't end up duplicating
+        // another field's text into it in the SARIF/Ballerina JSON output.
         return RuleMetadata.builder()
                 .numericId(id)
+                .name(name)
                 .description(description)
-                .fullDescription(fullDescription != null ? fullDescription : description)
+                .fullDescription(fullDescription)
                 .ruleKind(RuleKind.valueOf(kind))
+                .severity(severity != null ? Severity.valueOf(severity) : Severity.INFO)
                 .tags(tags != null ? tags : List.of())
-                .cwe(cwe != null ? cwe : List.of())
-                .owasp(owasp != null ? owasp : List.of())
-                .precision(precision)
-                .securitySeverity(securitySeverity)
+                .standards(standards)
                 .build();
     }
 }

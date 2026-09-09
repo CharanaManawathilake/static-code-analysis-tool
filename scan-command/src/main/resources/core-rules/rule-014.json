@@ -1,14 +1,24 @@
 {
   "id": 14,
   "kind": "VULNERABILITY",
-  "description": "Non configurable secrets are security-sensitive",
+  "name": "Non configurable secrets are security-sensitive",
+  "severity": "LOW",
+  "description": "A secret is assigned a fixed value instead of being exposed as a configurable one.",
   "fullDescription": "A secret that is assigned a fixed value rather than being exposed as a configurable value forces the same secret to be reused across environments and prevents it from being rotated or overridden without modifying and redeploying the code.",
-  "securitySeverity": 6.5,
   "tags": [
-    "security",
-    "external/cwe/cwe-798",
-    "external/owasp/owasp-a07-2025"
+    "security"
   ],
-  "cwe": [798],
-  "owasp": ["A07:2025"]
+  "standards": {
+    "cwe": [
+      798
+    ],
+    "owasp": [
+      {
+        "year": 2025,
+        "categories": [
+          7
+        ]
+      }
+    ]
+  }
 }

@@ -78,31 +78,32 @@ public class RuleFactory {
      */
     static Rule createCoreRule(RuleMetadata metadata) {
         String id = BALLERINA_RULE_PREFIX + metadata.numericId();
-        String description = metadata.description();
-        String helpUri = buildHelpUri(id, description);
-        String level = deriveLevel(metadata.ruleKind());
-        return new RuleImpl(id, metadata.numericId(), description, metadata.ruleKind(), description,
-                metadata.fullDescription(), helpUri, level, true, metadata.tags(), metadata.cwe(), metadata.owasp(),
-                metadata.precision(), metadata.securitySeverity());
+        // Only used to build a valid helpUri slug; the (possibly null) metadata.name() is what
+        // actually gets stored/reported, so an unauthored name never leaks a duplicated
+        // description into the output.
+        String nameForSlug = metadata.name() != null ? metadata.name() : metadata.description();
+        String helpUri = buildHelpUri(id, nameForSlug);
+        return new RuleImpl(id, metadata.numericId(), metadata.description(), metadata.ruleKind(), metadata.name(),
+                metadata.fullDescription(), helpUri, metadata.severity(), metadata.tags(), metadata.standards());
     }
 
     /**
-     * Constructs the helpUri for a rule based on its rule ID and description. Shared by SARIF
-     * generation (for every rule) and core-rule construction, so both formats surface the exact
-     * same value.
+     * Constructs the helpUri for a rule based on its rule ID and human-readable name. Shared by
+     * SARIF generation (for every rule) and core-rule construction, so both formats surface the
+     * exact same value.
      *
-     * @param ruleId      the rule ID
-     * @param description the rule description
+     * @param ruleId the rule ID
+     * @param name   the rule's human-readable name
      * @return the constructed helpUri
      */
-    public static String buildHelpUri(String ruleId, String description) {
+    public static String buildHelpUri(String ruleId, String name) {
         String baseUri = SARIF_TOOL_HELP_BASE_URI + TOOL_VERSION;
         String idPart = ruleId.replace(":", "").replace("/", "");
-        String descPart = description.toLowerCase(Locale.ROOT)
+        String namePart = name.toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9]+", "-")
                 .replaceAll("-$", "")
                 .replaceAll("^-", "");
-        return baseUri + "#" + idPart + "---" + descPart;
+        return baseUri + "#" + idPart + "---" + namePart;
     }
 
     /**
@@ -123,20 +124,6 @@ public class RuleFactory {
             // ignore: fall back to the system property/default below
         }
         return System.getProperty("app.version", "0.1.0");
-    }
-
-    /**
-     * Derives the default SARIF reporting level for a {@link RuleKind}.
-     *
-     * @param ruleKind the rule kind
-     * @return the corresponding SARIF level
-     */
-    static String deriveLevel(RuleKind ruleKind) {
-        return switch (ruleKind) {
-            case BUG -> "error";
-            case CODE_SMELL -> "note";
-            case VULNERABILITY -> "warning";
-        };
     }
 
     private RuleFactory() {

@@ -1,9 +1,10 @@
 {
   "id": 4,
   "kind": "CODE_SMELL",
-  "description": "Non isolated public method",
+  "name": "Non isolated public method",
+  "severity": "LOW",
+  "description": "A public method is not marked `isolated`, so it cannot be safely called from concurrently executing isolated code.",
   "fullDescription": "A public object method that is not marked `isolated` cannot be safely invoked from concurrently executing isolated code or workers without the compiler being able to prove the absence of data races, limiting how the method can be reused in concurrent contexts.",
-  "securitySeverity": 0.0,
   "tags": [
     "maintainability"
   ]

@@ -8,26 +8,33 @@
       "endColumn": 39,
       "startOffset": 757,
       "length": 22,
-      "snippet": {
-        "text": "checkpanic getResult()"
-      }
+      "snippet": "checkpanic getResult()"
     },
     "rule": {
       "id": "ballerina:1",
       "numericId": 1,
       "name": "Avoid checkpanic",
-      "description": "Avoid checkpanic",
-      "fullDescription": "The `checkpanic` expression causes the program to panic and terminate abruptly when the checked expression evaluates to an error, instead of allowing the error to be handled. Prefer `check` with explicit error handling so callers can recover instead of crashing.",
+      "description": "Using `checkpanic` lets an unhandled error panic and crash the program instead of being handled.",
+      "details": "The `checkpanic` expression causes the program to panic and terminate abruptly when the checked expression evaluates to an error, instead of allowing the error to be handled. Prefer `check` with explicit error handling so callers can recover instead of crashing.",
       "helpUri": "https://central.ballerina.io/ballerina/tool_scan/0.12.0#ballerina1---avoid-checkpanic",
-      "level": "note",
-      "enabled": true,
+      "severity": "LOW",
       "tags": [
-        "maintainability",
-        "external/cwe/cwe-248",
-        "external/cwe/cwe-636",
-        "external/owasp/owasp-a10-2025"
+        "maintainability"
       ],
-      "securitySeverity": 5.3,
+      "standards": {
+        "cwe": [
+          248,
+          636
+        ],
+        "owasp": [
+          {
+            "year": 2025,
+            "categories": [
+              10
+            ]
+          }
+        ]
+      },
       "ruleKind": "CODE_SMELL"
     },
     "source": "BUILT_IN",
@@ -43,26 +50,33 @@
       "endColumn": 39,
       "startOffset": 757,
       "length": 22,
-      "snippet": {
-        "text": "checkpanic getResult()"
-      }
+      "snippet": "checkpanic getResult()"
     },
     "rule": {
       "id": "ballerina:1",
       "numericId": 1,
       "name": "Avoid checkpanic",
-      "description": "Avoid checkpanic",
-      "fullDescription": "The `checkpanic` expression causes the program to panic and terminate abruptly when the checked expression evaluates to an error, instead of allowing the error to be handled. Prefer `check` with explicit error handling so callers can recover instead of crashing.",
+      "description": "Using `checkpanic` lets an unhandled error panic and crash the program instead of being handled.",
+      "details": "The `checkpanic` expression causes the program to panic and terminate abruptly when the checked expression evaluates to an error, instead of allowing the error to be handled. Prefer `check` with explicit error handling so callers can recover instead of crashing.",
       "helpUri": "https://central.ballerina.io/ballerina/tool_scan/0.12.0#ballerina1---avoid-checkpanic",
-      "level": "note",
-      "enabled": true,
+      "severity": "LOW",
       "tags": [
-        "maintainability",
-        "external/cwe/cwe-248",
-        "external/cwe/cwe-636",
-        "external/owasp/owasp-a10-2025"
+        "maintainability"
       ],
-      "securitySeverity": 5.3,
+      "standards": {
+        "cwe": [
+          248,
+          636
+        ],
+        "owasp": [
+          {
+            "year": 2025,
+            "categories": [
+              10
+            ]
+          }
+        ]
+      },
       "ruleKind": "CODE_SMELL"
     },
     "source": "BUILT_IN",

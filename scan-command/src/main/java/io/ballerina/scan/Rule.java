@@ -84,26 +84,16 @@ public interface Rule {
     }
 
     /**
-     * Returns the reporting level of the rule (e.g. {@code error}/{@code warning}/{@code note}),
-     * or {@code null} when unavailable.
+     * Returns the severity of the rule, or {@code null} when unavailable.
      *
-     * @return level of the rule, or {@code null}
+     * @return {@link Severity} of the rule, or {@code null}
      */
-    default String level() {
+    default Severity severity() {
         return null;
     }
 
     /**
-     * Returns whether the rule is enabled by default, or {@code null} when unavailable.
-     *
-     * @return {@code true}/{@code false} if known, otherwise {@code null}
-     */
-    default Boolean enabled() {
-        return null;
-    }
-
-    /**
-     * Returns the tags associated with the rule (e.g. category and CWE/OWASP references).
+     * Returns the tags associated with the rule (e.g. category references).
      *
      * @return tags of the rule, or an empty list when unavailable
      */
@@ -112,40 +102,11 @@ public interface Rule {
     }
 
     /**
-     * Returns the CWE identifiers associated with the rule.
+     * Returns the structured CWE/OWASP coverage of the rule, or {@code null} when unavailable.
      *
-     * @return CWE identifiers of the rule, or an empty list when unavailable
+     * @return {@link Standards} of the rule, or {@code null}
      */
-    default List<Integer> cwe() {
-        return List.of();
-    }
-
-    /**
-     * Returns the OWASP Top 10 category identifiers associated with the rule.
-     *
-     * @return OWASP category identifiers of the rule, or an empty list when unavailable
-     */
-    default List<String> owasp() {
-        return List.of();
-    }
-
-    /**
-     * Returns the precision/confidence of the rule (e.g. {@code high}/{@code medium}/{@code low}),
-     * or {@code null} when unavailable.
-     *
-     * @return precision of the rule, or {@code null}
-     */
-    default String precision() {
-        return null;
-    }
-
-    /**
-     * Returns the security severity score of the rule, or {@code null} when unavailable or not
-     * applicable.
-     *
-     * @return security severity of the rule, or {@code null}
-     */
-    default Double securitySeverity() {
+    default Standards standards() {
         return null;
     }
 }
