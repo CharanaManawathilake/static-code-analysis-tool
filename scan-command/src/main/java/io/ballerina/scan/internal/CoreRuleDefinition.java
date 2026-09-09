@@ -51,7 +51,7 @@ final class CoreRuleDefinition {
                 .description(description)
                 .fullDescription(fullDescription)
                 .ruleKind(RuleKind.valueOf(kind))
-                .severity(severity != null ? Severity.valueOf(severity) : Severity.INFO)
+                .severity(severity != null ? Severity.valueOf(severity) : null)
                 .tags(tags != null ? tags : List.of())
                 .standards(standards)
                 .build();

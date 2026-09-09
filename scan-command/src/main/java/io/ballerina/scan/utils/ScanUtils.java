@@ -30,6 +30,7 @@ import io.ballerina.projects.internal.model.Target;
 import io.ballerina.scan.Issue;
 import io.ballerina.scan.OwaspCoverage;
 import io.ballerina.scan.Rule;
+import io.ballerina.scan.RuleKind;
 import io.ballerina.scan.Severity;
 import io.ballerina.scan.Standards;
 import io.ballerina.scan.internal.IssueImpl;
@@ -355,25 +356,32 @@ public final class ScanUtils {
     }
 
     /**
-     * Resolves the SARIF reporting level for a rule from its {@link Severity}: {@code BLOCKER}/
-     * {@code HIGH} to {@code error}, {@code MEDIUM} to {@code warning}, {@code LOW} to
-     * {@code note}, {@code INFO} to {@code none}. A rule with no {@link Severity} (i.e. an
-     * external/plugin rule that predates this schema) resolves to the literal default
-     * {@code none} - this is never derived from {@link io.ballerina.scan.RuleKind}.
+     * Resolves the SARIF reporting level for a rule. When the rule has an explicit
+     * {@link Severity} (i.e. its {@code core-rules/rule-0NN.json} specifies one), that takes
+     * priority: {@code BLOCKER}/{@code HIGH} to {@code error}, {@code MEDIUM} to {@code warning},
+     * {@code LOW} to {@code note}, {@code INFO} to {@code none}. Otherwise - for any rule with no
+     * {@link Severity} at all, whether an external/plugin rule or a core rule whose JSON simply
+     * omits {@code severity} - this falls back to the original {@link RuleKind}-based mapping
+     * ({@code BUG} to {@code error}, {@code CODE_SMELL} to {@code note}, {@code VULNERABILITY} to
+     * {@code warning}), matching the tool's pre-existing/upstream behavior.
      *
      * @param rule the rule to resolve a SARIF level for
      * @return the resolved SARIF level
      */
     private static String resolveSarifLevel(Rule rule) {
         Severity severity = rule.severity();
-        if (severity == null) {
-            return "none";
+        if (severity != null) {
+            return switch (severity) {
+                case BLOCKER, HIGH -> "error";
+                case MEDIUM -> "warning";
+                case LOW -> "note";
+                case INFO -> "none";
+            };
         }
-        return switch (severity) {
-            case BLOCKER, HIGH -> "error";
-            case MEDIUM -> "warning";
-            case LOW -> "note";
-            case INFO -> "none";
+        return switch (rule.kind()) {
+            case BUG -> "error";
+            case CODE_SMELL -> "note";
+            case VULNERABILITY -> "warning";
         };
     }
 

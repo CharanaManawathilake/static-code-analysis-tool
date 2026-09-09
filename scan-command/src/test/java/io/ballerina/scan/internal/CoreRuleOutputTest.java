@@ -102,16 +102,16 @@ public class CoreRuleOutputTest extends BaseTest {
                 "the fingerprint key should carry the /v1 suffix");
     }
 
-    @Test(description = "test that a rule with no severity resolves to the literal SARIF level none")
-    void testMissingSeverityResolvesToNoneLevel() throws Exception {
+    @Test(description = "test that a rule with no severity falls back to the RuleKind-based SARIF level")
+    void testMissingSeverityFallsBackToRuleKindLevel() throws Exception {
         Project project = ProjectLoader.load(balProject).project();
         Rule externalRule = RuleFactory.createRule(101, "external rule 101", RuleKind.BUG);
         Issue issue = new IssueImpl(location, externalRule, Source.EXTERNAL, "main.bal",
                 balProject.resolve("main.bal").toString());
         String sarif = ScanUtils.convertIssuesToSarifString(List.of(issue), project);
 
-        Assert.assertTrue(sarif.contains("\"level\": \"none\""),
-                "a rule with no severity should default to the literal SARIF level none, "
-                        + "never derived from RuleKind");
+        Assert.assertTrue(sarif.contains("\"level\": \"error\""),
+                "a rule with no severity should fall back to the RuleKind-based level "
+                        + "(BUG -> error), matching the tool's original/upstream behavior");
     }
 }
