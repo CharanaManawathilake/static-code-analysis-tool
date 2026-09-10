@@ -436,10 +436,6 @@ public class ScanCmdTest extends BaseTest {
         Assert.assertFalse(content.contains("\"enabled\""), "SARIF defaultConfiguration should no longer " +
                 "include enabled");
         Assert.assertTrue(content.contains("\"ruleIndex\": 0"), "SARIF result should include ruleIndex");
-        Assert.assertTrue(content.contains("\"partialFingerprints\""), "SARIF result should include " +
-                "partialFingerprints");
-        Assert.assertTrue(content.contains("\"primaryLocationLineHash/v1\""), "SARIF result should include " +
-                "the versioned primaryLocationLineHash/v1 fingerprint key");
         Assert.assertTrue(content.contains("\"snippet\""), "SARIF region should include a source snippet");
     }
 

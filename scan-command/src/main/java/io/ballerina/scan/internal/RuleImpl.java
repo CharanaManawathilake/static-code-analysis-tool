@@ -37,9 +37,6 @@ public class RuleImpl implements Rule {
     private final int numericId;
     private final String name;
     private final String description;
-    // Serialized as "details" in the Ballerina JSON output (SARIF keeps its own separate
-    // "fullDescription" property, built independently in ScanUtils - this annotation only affects
-    // Gson's field-based reflection over this class).
     @SerializedName("details")
     private final String fullDescription;
     private final String helpUri;
@@ -88,9 +85,6 @@ public class RuleImpl implements Rule {
 
     @Override
     public String name() {
-        // Field stays null (and thus omitted from the Ballerina JSON output) when not explicitly
-        // set, but the Java API contract (see Rule#name()) still promises a fallback to
-        // description() so callers such as ScanUtils never see a null name.
         return name != null ? name : description;
     }
 

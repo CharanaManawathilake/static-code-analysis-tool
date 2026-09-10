@@ -98,8 +98,6 @@ public class CoreRuleOutputTest extends BaseTest {
                 "rule 1's LOW severity should resolve to the SARIF level note");
         Assert.assertFalse(sarif.contains("\"enabled\""), "defaultConfiguration should no longer include enabled");
         Assert.assertTrue(sarif.contains("\"snippet\": {"), "SARIF region.snippet should stay a nested object");
-        Assert.assertTrue(sarif.contains("\"primaryLocationLineHash/v1\""),
-                "the fingerprint key should carry the /v1 suffix");
     }
 
     @Test(description = "test that a rule with no severity falls back to the RuleKind-based SARIF level")

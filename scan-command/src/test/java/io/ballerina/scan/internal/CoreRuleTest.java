@@ -65,9 +65,6 @@ public class CoreRuleTest {
                     "description should be a genuine short description, not just repeat name, for " + rule.id());
             Assert.assertNotNull(rule.fullDescription(), "fullDescription should be populated for " + rule.id());
             Assert.assertNotNull(rule.helpUri(), "helpUri should be populated for " + rule.id());
-            // every bundled core-rules/rule-0NN.json currently specifies a severity explicitly; if
-            // a rule ever omits it, severity() legitimately returns null and SARIF falls back to a
-            // RuleKind-based level instead (see ScanUtils#resolveSarifLevel).
             Assert.assertNotNull(rule.severity(), "severity should be populated for " + rule.id());
         }
     }

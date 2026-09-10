@@ -115,15 +115,19 @@ public class RuleFactory {
      */
     private static String resolveToolVersion() {
         try (InputStream input = RuleFactory.class.getClassLoader().getResourceAsStream("version.properties")) {
-            if (input != null) {
-                Properties props = new Properties();
-                props.load(input);
-                return props.getProperty("app.version", "0.1.0");
+            if (input == null) {
+                throw new IllegalStateException("version.properties resource not found on classpath");
             }
+            Properties props = new Properties();
+            props.load(input);
+            String version = props.getProperty("app.version");
+            if (version == null) {
+                throw new IllegalStateException("app.version property missing from version.properties");
+            }
+            return version;
         } catch (IOException ex) {
-            // ignore: fall back to the system property/default below
+            throw new IllegalStateException("failed to load version.properties", ex);
         }
-        return System.getProperty("app.version", "0.1.0");
     }
 
     private RuleFactory() {

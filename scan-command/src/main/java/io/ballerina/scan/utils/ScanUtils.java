@@ -59,8 +59,6 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -247,8 +245,6 @@ public final class ScanUtils {
 
         // Create results array
         JsonArray results = new JsonArray();
-        Map<String, List<String>> fileLinesCache = new HashMap<>();
-        Map<String, Integer> lineHashOccurrences = new HashMap<>();
         Map<String, String> fileContentCache = new HashMap<>();
 
         for (Issue issue : issues) {
@@ -296,12 +292,6 @@ public final class ScanUtils {
             location.add("physicalLocation", physicalLocation);
             locations.add(location);
             result.add("locations", locations);
-
-            JsonObject partialFingerprints = new JsonObject();
-            partialFingerprints.addProperty("primaryLocationLineHash/v1",
-                    computeLineHash(issueImpl.filePath(), lineRange.startLine().line(), fileLinesCache,
-                            lineHashOccurrences));
-            result.add("partialFingerprints", partialFingerprints);
 
             results.add(result);
         }
@@ -441,54 +431,6 @@ public final class ScanUtils {
             return null;
         }
         return content.substring(start, end);
-    }
-
-    /**
-     * Computes a SARIF {@code partialFingerprints.primaryLocationLineHash}-shaped value for a
-     * result: an MD5 hash of the (trimmed) source line the issue starts on, followed by the
-     * 1-based occurrence count of that same hash seen so far in this run, e.g.
-     * {@code "8b5fadf7b30060f688c7e7a10a39b8a7:1"}. SARIF does not mandate a specific
-     * fingerprinting algorithm; this is the scan tool's own convention.
-     *
-     * @param filePath          absolute path of the file the issue was found in
-     * @param lineIndex         zero-based line index the issue starts on
-     * @param fileLinesCache    cache of file path to its lines, shared across a single SARIF run
-     * @param hashOccurrences   occurrence counts per hash, shared across a single SARIF run
-     * @return the computed line hash fingerprint
-     */
-    private static String computeLineHash(String filePath, int lineIndex, Map<String, List<String>> fileLinesCache,
-                                          Map<String, Integer> hashOccurrences) {
-        List<String> lines = fileLinesCache.computeIfAbsent(filePath, path -> {
-            try {
-                return Files.readAllLines(Path.of(path), StandardCharsets.UTF_8);
-            } catch (IOException ex) {
-                return List.of();
-            }
-        });
-        String lineText = (lineIndex >= 0 && lineIndex < lines.size()) ? lines.get(lineIndex).strip() : "";
-        String hash = md5Hex(lineText);
-        int occurrence = hashOccurrences.merge(hash, 1, Integer::sum);
-        return hash + ":" + occurrence;
-    }
-
-    /**
-     * Returns the MD5 hex digest of the given text.
-     *
-     * @param text the text to hash
-     * @return the MD5 hex digest
-     */
-    private static String md5Hex(String text) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("MD5");
-            byte[] hashBytes = digest.digest(text.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hex = new StringBuilder(hashBytes.length * 2);
-            for (byte b : hashBytes) {
-                hex.append(String.format("%02x", b));
-            }
-            return hex.toString();
-        } catch (NoSuchAlgorithmException ex) {
-            return Integer.toHexString(text.hashCode());
-        }
     }
 
     /**
