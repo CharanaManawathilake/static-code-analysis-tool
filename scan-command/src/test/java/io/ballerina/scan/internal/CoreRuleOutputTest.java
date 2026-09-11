@@ -30,6 +30,9 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.wso2.ballerinalang.compiler.diagnostic.BLangDiagnosticLocation;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -40,12 +43,20 @@ import java.util.List;
  *
  * @since 0.1.0
  */
-public class CoreRuleOutputTest extends BaseTest {
+public final class CoreRuleOutputTest extends BaseTest {
     private final Path balProject = testResources.resolve("test-resources")
             .resolve("bal-project-with-analyzer-configurations");
 
-    // Location known to fall within bal-project-with-analyzer-configurations/main.bal.
-    private final BLangDiagnosticLocation location = new BLangDiagnosticLocation("main.bal", 20, 20, 17, 39, 777, 22);
+    private final BLangDiagnosticLocation location = buildLocationWithinFile(balProject.resolve("main.bal"));
+
+    private static BLangDiagnosticLocation buildLocationWithinFile(Path filePath) {
+        try {
+            int length = (int) Math.min(20, Files.size(filePath));
+            return new BLangDiagnosticLocation("main.bal", 1, 0, 1, length, 0, length);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     @Test(description = "test that standards is omitted, tags stay general, and severity/snippet are present "
             + "in the Ballerina JSON output")
