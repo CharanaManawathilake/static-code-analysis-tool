@@ -8,12 +8,14 @@
       "endColumn": 1,
       "startOffset": 648,
       "length": 134,
-      "snippet": "function getResult() returns int|error \u003d\u003e 1;\n\npublic function main() {\n    // Non-compliant\n    int result \u003d checkpanic getResult();\n}"
+      "snippet": "function getResult() returns int|error => 1;\n\npublic function main() {\n    // Non-compliant\n    int result = checkpanic getResult();\n}"
     },
     "rule": {
       "id": "ballerina/example_module_static_code_analyzer:1",
       "numericId": 1,
       "description": "rule 1",
+      "helpUri": "https://central.ballerina.io/ballerina/tool_scan/0.12.0#ballerinaexample_module_static_code_analyzer1---rule-1",
+      "tags": [],
       "ruleKind": "CODE_SMELL"
     },
     "source": "BUILT_IN",
@@ -29,12 +31,14 @@
       "endColumn": 1,
       "startOffset": 648,
       "length": 134,
-      "snippet": "function getResult() returns int|error \u003d\u003e 1;\n\npublic function main() {\n    // Non-compliant\n    int result \u003d checkpanic getResult();\n}"
+      "snippet": "function getResult() returns int|error => 1;\n\npublic function main() {\n    // Non-compliant\n    int result = checkpanic getResult();\n}"
     },
     "rule": {
       "id": "exampleOrg/example_module_static_code_analyzer:1",
       "numericId": 1,
       "description": "rule 1",
+      "helpUri": "https://central.ballerina.io/ballerina/tool_scan/0.12.0#exampleOrgexample_module_static_code_analyzer1---rule-1",
+      "tags": [],
       "ruleKind": "CODE_SMELL"
     },
     "source": "EXTERNAL",
@@ -50,12 +54,14 @@
       "endColumn": 1,
       "startOffset": 648,
       "length": 134,
-      "snippet": "function getResult() returns int|error \u003d\u003e 1;\n\npublic function main() {\n    // Non-compliant\n    int result \u003d checkpanic getResult();\n}"
+      "snippet": "function getResult() returns int|error => 1;\n\npublic function main() {\n    // Non-compliant\n    int result = checkpanic getResult();\n}"
     },
     "rule": {
       "id": "ballerinax/example_module_static_code_analyzer:1",
       "numericId": 1,
       "description": "rule 1",
+      "helpUri": "https://central.ballerina.io/ballerina/tool_scan/0.12.0#ballerinaxexample_module_static_code_analyzer1---rule-1",
+      "tags": [],
       "ruleKind": "CODE_SMELL"
     },
     "source": "BUILT_IN",

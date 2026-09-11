@@ -228,9 +228,9 @@ public class ProjectAnalyzer {
         JsonArray ruleArray = getRuleJsonArray(pluginName, ruleFileContent);
         for (JsonElement rule : ruleArray) {
             JsonObject ruleObject = getRuleObject(pluginName, rule);
-            RuleKind ruleKind = getRuleKind(pluginName, ruleObject.get(RULE_KIND).getAsString());
-            Rule inMemoryRule = RuleFactory.createRule(ruleObject.get(RULE_ID).getAsInt(),
-                    ruleObject.get(RULE_DESCRIPTION).getAsString(), ruleKind, org, name);
+            getRuleKind(pluginName, ruleObject.get(RULE_KIND).getAsString());
+            CoreRuleDefinition definition = gson.fromJson(ruleObject, CoreRuleDefinition.class);
+            Rule inMemoryRule = RuleFactory.createRule(definition.toMetadata(), org, name);
             rules.add(inMemoryRule);
         }
         return rules;

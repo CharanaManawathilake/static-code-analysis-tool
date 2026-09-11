@@ -78,13 +78,36 @@ public class RuleFactory {
      */
     static Rule createCoreRule(RuleMetadata metadata) {
         String id = BALLERINA_RULE_PREFIX + metadata.numericId();
-        // Only used to build a valid helpUri slug; the (possibly null) metadata.name() is what
-        // actually gets stored/reported, so an unauthored name never leaks a duplicated
-        // description into the output.
-        String nameForSlug = metadata.name() != null ? metadata.name() : metadata.description();
-        String helpUri = buildHelpUri(id, nameForSlug);
         return new RuleImpl(id, metadata.numericId(), metadata.description(), metadata.ruleKind(), metadata.name(),
-                metadata.fullDescription(), helpUri, metadata.severity(), metadata.tags(), metadata.standards());
+                metadata.fullDescription(), buildHelpUriForMetadata(id, metadata), metadata.severity(),
+                metadata.tags(), metadata.standards());
+    }
+
+    /**
+     * Returns a fully populated external static code analysis {@link Rule} instance, built from the
+     * rich rule metadata a compiler plugin authored in its {@code rules.json} (see
+     * {@link CoreRuleDefinition}, whose JSON shape is reused for external rules too).
+     *
+     * @param metadata the rich metadata describing the external rule
+     * @param org      Ballerina package organisation name of the compiler plugin
+     * @param name     Ballerina package name of the compiler plugin
+     * @return an external static code analysis rule instance carrying the full rule metadata
+     */
+    static Rule createRule(RuleMetadata metadata, String org, String name) {
+        String id = org + FORWARD_SLASH + name + ":" + metadata.numericId();
+        return new RuleImpl(id, metadata.numericId(), metadata.description(), metadata.ruleKind(), metadata.name(),
+                metadata.fullDescription(), buildHelpUriForMetadata(id, metadata), metadata.severity(),
+                metadata.tags(), metadata.standards());
+    }
+
+    /**
+     * Only used to build a valid helpUri slug; the (possibly null) {@code metadata.name()} is what
+     * actually gets stored/reported, so an unauthored name never leaks a duplicated description into
+     * the output.
+     */
+    private static String buildHelpUriForMetadata(String id, RuleMetadata metadata) {
+        String nameForSlug = metadata.name() != null ? metadata.name() : metadata.description();
+        return buildHelpUri(id, nameForSlug);
     }
 
     /**

@@ -112,4 +112,29 @@ public class CoreRuleOutputTest extends BaseTest {
                 "a rule with no severity should fall back to the RuleKind-based level "
                         + "(BUG -> error), matching the tool's original/upstream behavior");
     }
+
+    @Test(description = "test that a rule created via the basic (no rich metadata) API does not duplicate its "
+            + "description into a redundant SARIF fullDescription, nor into a \"name\" field in the Ballerina "
+            + "JSON output")
+    void testBasicRuleOmitsFullDescriptionAndNameWhenNotAuthored() throws Exception {
+        Project project = ProjectLoader.load(balProject).project();
+        Rule externalRule = RuleFactory.createRule(101, "external rule 101", RuleKind.BUG, "exampleOrg",
+                "exampleModule");
+        Issue issue = new IssueImpl(location, externalRule, Source.EXTERNAL, "main.bal",
+                balProject.resolve("main.bal").toString());
+
+        String sarif = ScanUtils.convertIssuesToSarifString(List.of(issue), project);
+        Assert.assertTrue(sarif.contains("\"shortDescription\""), "shortDescription should always be present");
+        Assert.assertFalse(sarif.contains("\"fullDescription\""),
+                "a rule with no distinct full description should not duplicate shortDescription's text into "
+                        + "a redundant SARIF fullDescription");
+
+        String json = ScanUtils.convertIssuesToJsonString(List.of(issue));
+        Assert.assertFalse(json.contains("\"name\""),
+                "a rule with no authored name should not duplicate description into a redundant \"name\" "
+                        + "field in the Ballerina JSON output");
+        Assert.assertFalse(json.contains("\"details\""),
+                "a rule with no authored full description should not duplicate description into a "
+                        + "redundant \"details\" field in the Ballerina JSON output");
+    }
 }

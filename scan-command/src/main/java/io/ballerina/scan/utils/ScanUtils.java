@@ -166,7 +166,7 @@ public final class ScanUtils {
      * @return json string array of generated issues
      */
     public static String convertIssuesToJsonString(List<Issue> issues) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         JsonArray issuesAsJson = gson.toJsonTree(issues).getAsJsonArray();
 
         Map<String, String> fileContentCache = new HashMap<>();
@@ -201,7 +201,9 @@ public final class ScanUtils {
      * @return SARIF string representation of generated issues
      */
     public static String convertIssuesToSarifString(List<Issue> issues, Project project) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        // disableHtmlEscaping: SARIF is consumed by tools (CI, SARIF viewers), not embedded as
+        // markup, so snippet/description text must round-trip literally - see convertIssuesToJsonString.
+        Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
         // Create SARIF root object
         JsonObject sarif = new JsonObject();
@@ -322,7 +324,10 @@ public final class ScanUtils {
         shortDescription.addProperty("text", rule.description());
         obj.add("shortDescription", shortDescription);
 
-        if (rule.fullDescription() != null) {
+        // Rule#fullDescription() defaults to description() when the rule never authored a distinct
+        // long description (see Rule.fullDescription() javadoc), so only emit SARIF's fullDescription
+        // when it actually differs - otherwise it would just duplicate shortDescription's text.
+        if (rule.fullDescription() != null && !rule.fullDescription().equals(rule.description())) {
             JsonObject fullDescription = new JsonObject();
             fullDescription.addProperty("text", rule.fullDescription());
             obj.add("fullDescription", fullDescription);
