@@ -28,9 +28,13 @@ import io.ballerina.projects.ProjectKind;
 import io.ballerina.projects.TomlDocument;
 import io.ballerina.projects.internal.model.Target;
 import io.ballerina.scan.Issue;
+import io.ballerina.scan.OwaspCoverage;
 import io.ballerina.scan.Rule;
 import io.ballerina.scan.RuleKind;
+import io.ballerina.scan.Severity;
+import io.ballerina.scan.Standards;
 import io.ballerina.scan.internal.IssueImpl;
+import io.ballerina.scan.internal.RuleFactory;
 import io.ballerina.toml.api.Toml;
 import io.ballerina.toml.semantic.TomlType;
 import io.ballerina.toml.semantic.ast.TomlArrayValueNode;
@@ -56,6 +60,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -114,7 +119,6 @@ import static io.ballerina.scan.utils.Constants.SCAN_REPORT_PROJECT_NAME;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_SCANNED_FILES;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_ZIP_FILE;
 import static io.ballerina.scan.utils.Constants.SCAN_TABLE;
-import static java.util.Locale.ROOT;
 
 /**
  * {@code ScanUtils} contains all the utility functions used by the scan tool.
@@ -162,8 +166,20 @@ public final class ScanUtils {
      * @return json string array of generated issues
      */
     public static String convertIssuesToJsonString(List<Issue> issues) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
         JsonArray issuesAsJson = gson.toJsonTree(issues).getAsJsonArray();
+
+        Map<String, String> fileContentCache = new HashMap<>();
+        for (int i = 0; i < issues.size(); i++) {
+            IssueImpl issueImpl = (IssueImpl) issues.get(i);
+            String snippetText = extractSnippet(issueImpl.filePath(), issueImpl.location().textRange(),
+                    fileContentCache);
+            if (snippetText != null) {
+                issuesAsJson.get(i).getAsJsonObject().getAsJsonObject("location")
+                        .addProperty("snippet", snippetText);
+            }
+        }
+
         String json = gson.toJson(issuesAsJson);
         if (File.separator.equals("\\")) {
             // Gson JSON-escapes backslashes in fileName (\ -> \\), but fileName is a display field
@@ -185,7 +201,7 @@ public final class ScanUtils {
      * @return SARIF string representation of generated issues
      */
     public static String convertIssuesToSarifString(List<Issue> issues, Project project) {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
 
         // Create SARIF root object
         JsonObject sarif = new JsonObject();
@@ -207,33 +223,18 @@ public final class ScanUtils {
         // Create rules array for the tool
         JsonArray rules = new JsonArray();
         Map<String, JsonObject> ruleMap = new HashMap<>();
+        Map<String, Integer> ruleIndexMap = new HashMap<>();
         Set<String> addedRuleIds = new HashSet<>();
 
         // Collect unique rules from issues
         for (Issue issue : issues) {
             IssueImpl issueImpl = (IssueImpl) issue;
-            String ruleId = issueImpl.rule().id();
+            Rule rule = issueImpl.rule();
+            String ruleId = rule.id();
 
-            JsonObject ruleObject = ruleMap.computeIfAbsent(ruleId, id -> {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("id", id);
-
-                // Construct helpUri based on rule ID and description
-                String helpUri = constructHelpUri(id, issueImpl.rule().description());
-                obj.addProperty("helpUri", helpUri);
-
-                JsonObject shortDescription = new JsonObject();
-                shortDescription.addProperty("text", issueImpl.rule().description());
-                obj.add("shortDescription", shortDescription);
-
-                String level = mapRuleKindToSarifLevel(issueImpl.rule().kind());
-                JsonObject defaultConfiguration = new JsonObject();
-                defaultConfiguration.addProperty("level", level);
-                obj.add("defaultConfiguration", defaultConfiguration);
-
-                return obj;
-            });
+            JsonObject ruleObject = ruleMap.computeIfAbsent(ruleId, id -> buildSarifRuleObject(rule));
             if (addedRuleIds.add(ruleId)) {
+                ruleIndexMap.put(ruleId, rules.size());
                 rules.add(ruleObject);
             }
         }
@@ -244,16 +245,19 @@ public final class ScanUtils {
 
         // Create results array
         JsonArray results = new JsonArray();
+        Map<String, String> fileContentCache = new HashMap<>();
 
         for (Issue issue : issues) {
             IssueImpl issueImpl = (IssueImpl) issue;
+            Rule rule = issueImpl.rule();
             JsonObject result = new JsonObject();
 
-            result.addProperty("ruleId", issueImpl.rule().id());
-            result.addProperty("level", mapRuleKindToSarifLevel(issueImpl.rule().kind()));
+            result.addProperty("ruleId", rule.id());
+            result.addProperty("ruleIndex", ruleIndexMap.get(rule.id()));
+            result.addProperty("level", resolveSarifLevel(rule));
 
             JsonObject message = new JsonObject();
-            message.addProperty("text", issueImpl.rule().description());
+            message.addProperty("text", rule.description());
             result.add("message", message);
 
             // Create locations array
@@ -275,6 +279,14 @@ public final class ScanUtils {
             region.addProperty("endColumn", lineRange.endLine().offset() + 1);
             region.addProperty("charOffset", textRange.startOffset());
             region.addProperty("charLength", textRange.length());
+
+            String snippetText = extractSnippet(issueImpl.filePath(), textRange, fileContentCache);
+            if (snippetText != null) {
+                JsonObject snippet = new JsonObject();
+                snippet.addProperty("text", snippetText);
+                region.add("snippet", snippet);
+            }
+
             physicalLocation.add("region", region);
 
             location.add("physicalLocation", physicalLocation);
@@ -292,36 +304,136 @@ public final class ScanUtils {
     }
 
     /**
-     * Constructs the helpUri based on rule ID and description.
+     * Builds the SARIF rule object for a single {@link Rule}, including the enriched metadata
+     * (full description, tags, CWE/OWASP coverage, ruleKind) when the rule carries it.
      *
-     * @param ruleId      the rule ID
-     * @param description the rule description
-     * @return the constructed helpUri
+     * @param rule the rule to build a SARIF rule object for
+     * @return the SARIF rule object
      */
-    private static String constructHelpUri(String ruleId, String description) {
-        String baseUri = SARIF_TOOL_URI + SARIF_TOOL_VERSION;
-        String anchor;
-        String idPart = ruleId.replace(":", "").replace("/", "");
-        String descPart = description.toLowerCase(ROOT)
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("-$", "")
-                .replaceAll("^-", "");
-        anchor = "#" + idPart + "---" + descPart;
-        return baseUri + anchor;
+    private static JsonObject buildSarifRuleObject(Rule rule) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("id", rule.id());
+
+        String helpUri = rule.helpUri() != null ? rule.helpUri()
+                : RuleFactory.buildHelpUri(rule.id(), rule.name());
+        obj.addProperty("helpUri", helpUri);
+
+        JsonObject shortDescription = new JsonObject();
+        shortDescription.addProperty("text", rule.description());
+        obj.add("shortDescription", shortDescription);
+
+        // Rule#fullDescription() defaults to description() when the rule never authored a distinct
+        // long description (see Rule.fullDescription() javadoc), so only emit SARIF's fullDescription
+        // when it actually differs - otherwise it would just duplicate shortDescription's text.
+        if (rule.fullDescription() != null && !rule.fullDescription().equals(rule.description())) {
+            JsonObject fullDescription = new JsonObject();
+            fullDescription.addProperty("text", rule.fullDescription());
+            obj.add("fullDescription", fullDescription);
+        }
+
+        JsonObject defaultConfiguration = new JsonObject();
+        defaultConfiguration.addProperty("level", resolveSarifLevel(rule));
+        obj.add("defaultConfiguration", defaultConfiguration);
+
+        JsonObject properties = new JsonObject();
+        properties.addProperty("ruleKind", rule.kind().toString());
+        List<String> sarifTags = buildSarifTags(rule);
+        if (!sarifTags.isEmpty()) {
+            JsonArray tags = new JsonArray();
+            sarifTags.forEach(tags::add);
+            properties.add("tags", tags);
+        }
+        obj.add("properties", properties);
+
+        return obj;
     }
 
     /**
-     * Maps RuleKind to SARIF level.
+     * Resolves the SARIF reporting level for a rule. When the rule has an explicit
+     * {@link Severity} (i.e. its entry in {@code core-rules/rules.json} specifies one), that takes
+     * priority: {@code BLOCKER}/{@code HIGH} to {@code error}, {@code MEDIUM} to {@code warning},
+     * {@code LOW} to {@code note}, {@code INFO} to {@code none}. Otherwise - for any rule with no
+     * {@link Severity} at all, whether an external/plugin rule or a core rule whose JSON simply
+     * omits {@code severity} - this falls back to the original {@link RuleKind}-based mapping
+     * ({@code BUG} to {@code error}, {@code CODE_SMELL} to {@code note}, {@code VULNERABILITY} to
+     * {@code warning}), matching the tool's pre-existing/upstream behavior.
      *
-     * @param ruleKind the rule kind
-     * @return corresponding SARIF level
+     * @param rule the rule to resolve a SARIF level for
+     * @return the resolved SARIF level
      */
-    private static String mapRuleKindToSarifLevel(RuleKind ruleKind) {
-        return switch (ruleKind) {
+    private static String resolveSarifLevel(Rule rule) {
+        Severity severity = rule.severity();
+        if (severity != null) {
+            return switch (severity) {
+                case BLOCKER, HIGH -> "error";
+                case MEDIUM -> "warning";
+                case LOW -> "note";
+                case INFO -> "none";
+            };
+        }
+        return switch (rule.kind()) {
             case BUG -> "error";
-            case CODE_SMELL -> "note";
             case VULNERABILITY -> "warning";
+            case CODE_SMELL -> "note";
         };
+    }
+
+    /**
+     * Builds the full SARIF {@code properties.tags} list for a rule: its general {@link Rule#tags()}
+     * plus {@code external/cwe/cwe-*} and {@code external/owasp/owasp-a*-*} entries generated from
+     * {@link Rule#standards()}.
+     *
+     * @param rule the rule to build SARIF tags for
+     * @return the combined tag list, or an empty list when the rule has neither
+     */
+    private static List<String> buildSarifTags(Rule rule) {
+        List<String> sarifTags = new ArrayList<>();
+        if (rule.tags() != null) {
+            sarifTags.addAll(rule.tags());
+        }
+        Standards standards = rule.standards();
+        if (standards != null) {
+            for (Integer cwe : standards.cwe()) {
+                sarifTags.add("external/cwe/cwe-" + cwe);
+            }
+            for (OwaspCoverage coverage : standards.owasp()) {
+                for (Integer category : coverage.categories()) {
+                    sarifTags.add(String.format("external/owasp/owasp-a%02d-%d", category, coverage.year()));
+                }
+            }
+        }
+        return sarifTags;
+    }
+
+    /**
+     * Extracts the exact source text an issue's location covers (from {@code textRange}), for use
+     * as a {@code snippet.text} value in both the SARIF and Ballerina JSON output. Returns
+     * {@code null} when the file cannot be read or the range falls outside its content, so callers
+     * can simply omit the snippet in that case.
+     *
+     * @param filePath       absolute path of the file the issue was found in
+     * @param textRange      the character range of the issue's location
+     * @param fileContentCache cache of file path to its full content, shared across a single report
+     * @return the source text covered by the range, or {@code null} when unavailable
+     */
+    private static String extractSnippet(String filePath, TextRange textRange,
+                                         Map<String, String> fileContentCache) {
+        String content = fileContentCache.computeIfAbsent(filePath, path -> {
+            try {
+                return Files.readString(Path.of(path), StandardCharsets.UTF_8);
+            } catch (IOException ex) {
+                return null;
+            }
+        });
+        if (content == null) {
+            return null;
+        }
+        int start = textRange.startOffset();
+        int end = start + textRange.length();
+        if (start < 0 || end > content.length() || start > end) {
+            return null;
+        }
+        return content.substring(start, end);
     }
 
     /**
@@ -824,7 +936,7 @@ public final class ScanUtils {
         for (Rule rule : rules) {
             maxRuleIDLength = Math.max(maxRuleIDLength, rule.id().length());
             maxSeverityLength = Math.max(maxSeverityLength, rule.kind().toString().length());
-            maxDescriptionLength = Math.max(maxDescriptionLength, rule.description().length());
+            maxDescriptionLength = Math.max(maxDescriptionLength, rule.name().length());
         }
 
         String format = "\t%-" + maxRuleIDLength + "s | %-" + maxSeverityLength + "s | %-" + maxDescriptionLength
@@ -838,7 +950,7 @@ public final class ScanUtils {
 
         sortRules(rules);
         for (Rule rule : rules) {
-            String formattedLine = String.format(format, rule.id(), rule.kind().toString(), rule.description());
+            String formattedLine = String.format(format, rule.id(), rule.kind().toString(), rule.name());
             outputStream.println(formattedLine.stripTrailing());
         }
     }

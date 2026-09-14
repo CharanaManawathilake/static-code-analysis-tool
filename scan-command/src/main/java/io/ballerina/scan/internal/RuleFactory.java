@@ -21,6 +21,11 @@ package io.ballerina.scan.internal;
 import io.ballerina.scan.Rule;
 import io.ballerina.scan.RuleKind;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Locale;
+import java.util.Properties;
+
 import static io.ballerina.scan.internal.ScanToolConstants.BALLERINA_RULE_PREFIX;
 import static io.ballerina.scan.internal.ScanToolConstants.FORWARD_SLASH;
 
@@ -29,7 +34,11 @@ import static io.ballerina.scan.internal.ScanToolConstants.FORWARD_SLASH;
  *
  * @since 0.1.0
  * */
-class RuleFactory {
+public class RuleFactory {
+
+    private static final String SARIF_TOOL_HELP_BASE_URI = "https://central.ballerina.io/ballerina/tool_scan/";
+    private static final String TOOL_VERSION = resolveToolVersion();
+
     /**
      * Returns a core static code analysis {@link Rule} instance.
      *
@@ -58,6 +67,90 @@ class RuleFactory {
         String reportedSource = org + FORWARD_SLASH + name;
         return new RuleImpl(reportedSource + ":" + numericId, numericId, description,
                 ruleKind);
+    }
+
+    /**
+     * Returns a fully populated core static code analysis {@link Rule} instance, built from the
+     * rich rule metadata bundled for built-in Ballerina rules.
+     *
+     * @param metadata the rich metadata describing the core rule
+     * @return a core static code analysis rule instance carrying the full rule metadata
+     */
+    static Rule createCoreRule(RuleMetadata metadata) {
+        String id = BALLERINA_RULE_PREFIX + metadata.numericId();
+        return new RuleImpl(id, metadata.numericId(), metadata.description(), metadata.ruleKind(), metadata.name(),
+                metadata.fullDescription(), buildHelpUriForMetadata(id, metadata), metadata.severity(),
+                metadata.tags(), metadata.standards());
+    }
+
+    /**
+     * Returns a fully populated external static code analysis {@link Rule} instance, built from the
+     * rich rule metadata a compiler plugin authored in its {@code rules.json} (see
+     * {@link CoreRuleDefinition}, whose JSON shape is reused for external rules too).
+     *
+     * @param metadata the rich metadata describing the external rule
+     * @param org      Ballerina package organisation name of the compiler plugin
+     * @param name     Ballerina package name of the compiler plugin
+     * @return an external static code analysis rule instance carrying the full rule metadata
+     */
+    static Rule createRule(RuleMetadata metadata, String org, String name) {
+        String id = org + FORWARD_SLASH + name + ":" + metadata.numericId();
+        return new RuleImpl(id, metadata.numericId(), metadata.description(), metadata.ruleKind(), metadata.name(),
+                metadata.fullDescription(), buildHelpUriForMetadata(id, metadata), metadata.severity(),
+                metadata.tags(), metadata.standards());
+    }
+
+    /**
+     * Only used to build a valid helpUri slug; the (possibly null) {@code metadata.name()} is what
+     * actually gets stored/reported, so an unauthored name never leaks a duplicated description into
+     * the output.
+     */
+    private static String buildHelpUriForMetadata(String id, RuleMetadata metadata) {
+        String nameForSlug = metadata.name() != null ? metadata.name() : metadata.description();
+        return buildHelpUri(id, nameForSlug);
+    }
+
+    /**
+     * Constructs the helpUri for a rule based on its rule ID and human-readable name. Shared by
+     * SARIF generation (for every rule) and core-rule construction, so both formats surface the
+     * exact same value.
+     *
+     * @param ruleId the rule ID
+     * @param name   the rule's human-readable name
+     * @return the constructed helpUri
+     */
+    public static String buildHelpUri(String ruleId, String name) {
+        String baseUri = SARIF_TOOL_HELP_BASE_URI + TOOL_VERSION;
+        String idPart = ruleId.replace(":", "").replace("/", "");
+        String namePart = name.toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "-")
+                .replaceAll("-$", "")
+                .replaceAll("^-", "");
+        return baseUri + "#" + idPart + "---" + namePart;
+    }
+
+    /**
+     * Resolves the tool's application version the same way {@code Constants} does, kept as a
+     * local copy so this internal-package class does not need to depend on the {@code utils}
+     * package (which already depends on {@code internal}).
+     *
+     * @return the resolved application version
+     */
+    private static String resolveToolVersion() {
+        try (InputStream input = RuleFactory.class.getClassLoader().getResourceAsStream("version.properties")) {
+            if (input == null) {
+                throw new IllegalStateException("version.properties resource not found on classpath");
+            }
+            Properties props = new Properties();
+            props.load(input);
+            String version = props.getProperty("app.version");
+            if (version == null) {
+                throw new IllegalStateException("app.version property missing from version.properties");
+            }
+            return version;
+        } catch (IOException ex) {
+            throw new IllegalStateException("failed to load version.properties", ex);
+        }
     }
 
     private RuleFactory() {
