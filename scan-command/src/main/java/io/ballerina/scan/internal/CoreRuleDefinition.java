@@ -42,8 +42,8 @@ final class CoreRuleDefinition {
     private List<String> tags;
     private Standards standards;
 
-    RuleMetadata toMetadata() {
-        return RuleMetadata.builder()
+    RuleImpl.Builder toRuleBuilder() {
+        return RuleImpl.builder()
                 .numericId(id)
                 .name(name)
                 .description(description)
@@ -51,7 +51,6 @@ final class CoreRuleDefinition {
                 .ruleKind(RuleKind.valueOf(kind))
                 .severity(severity != null ? Severity.valueOf(severity) : null)
                 .tags(tags != null ? tags : List.of())
-                .standards(standards)
-                .build();
+                .standards(standards);
     }
 }

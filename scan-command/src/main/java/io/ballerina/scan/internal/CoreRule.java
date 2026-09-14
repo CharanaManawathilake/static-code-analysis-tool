@@ -97,8 +97,8 @@ enum CoreRule {
                 CoreRuleDefinition[] definitions = new Gson().fromJson(content, CoreRuleDefinition[].class);
                 Map<Integer, Rule> rulesById = new HashMap<>();
                 for (CoreRuleDefinition definition : definitions) {
-                    RuleMetadata metadata = definition.toMetadata();
-                    rulesById.put(metadata.numericId(), RuleFactory.createCoreRule(metadata));
+                    RuleImpl.Builder builder = definition.toRuleBuilder();
+                    rulesById.put(builder.numericId(), RuleFactory.createCoreRule(builder));
                 }
                 return rulesById;
             } catch (IOException ex) {

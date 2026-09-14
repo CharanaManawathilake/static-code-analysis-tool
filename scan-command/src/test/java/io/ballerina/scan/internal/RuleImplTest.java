@@ -69,7 +69,7 @@ public class RuleImplTest {
                 + "}";
         JsonObject ruleObject = JsonParser.parseString(json).getAsJsonObject();
         CoreRuleDefinition definition = new Gson().fromJson(ruleObject, CoreRuleDefinition.class);
-        Rule rule = RuleFactory.createRule(definition.toMetadata(), "ballerina", "io");
+        Rule rule = RuleFactory.createRule(definition.toRuleBuilder(), "ballerina", "io");
 
         Assert.assertEquals(rule.id(), "ballerina/io:1");
         Assert.assertEquals(rule.numericId(), 1);
@@ -89,7 +89,7 @@ public class RuleImplTest {
         String json = "{\"id\": 1, \"kind\": \"CODE_SMELL\", \"description\": \"rule 1\"}";
         JsonObject ruleObject = JsonParser.parseString(json).getAsJsonObject();
         CoreRuleDefinition definition = new Gson().fromJson(ruleObject, CoreRuleDefinition.class);
-        Rule rule = RuleFactory.createRule(definition.toMetadata(), "exampleOrg", "exampleName");
+        Rule rule = RuleFactory.createRule(definition.toRuleBuilder(), "exampleOrg", "exampleName");
 
         Assert.assertEquals(rule.id(), "exampleOrg/exampleName:1");
         Assert.assertEquals(rule.name(), "rule 1");

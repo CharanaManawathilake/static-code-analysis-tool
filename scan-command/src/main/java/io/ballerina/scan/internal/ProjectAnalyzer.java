@@ -230,7 +230,7 @@ public class ProjectAnalyzer {
             JsonObject ruleObject = getRuleObject(pluginName, rule);
             getRuleKind(pluginName, ruleObject.get(RULE_KIND).getAsString());
             CoreRuleDefinition definition = gson.fromJson(ruleObject, CoreRuleDefinition.class);
-            Rule inMemoryRule = RuleFactory.createRule(definition.toMetadata(), org, name);
+            Rule inMemoryRule = RuleFactory.createRule(definition.toRuleBuilder(), org, name);
             rules.add(inMemoryRule);
         }
         return rules;

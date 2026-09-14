@@ -49,7 +49,12 @@ public class RuleFactory {
      * @return a core static code analysis rule instance
      */
     static Rule createRule(int numericId, String description, RuleKind ruleKind) {
-        return new RuleImpl(BALLERINA_RULE_PREFIX + numericId, numericId, description, ruleKind);
+        return RuleImpl.builder()
+                .id(BALLERINA_RULE_PREFIX + numericId)
+                .numericId(numericId)
+                .description(description)
+                .ruleKind(ruleKind)
+                .build();
     }
 
     /**
@@ -65,22 +70,26 @@ public class RuleFactory {
      */
     static Rule createRule(int numericId, String description, RuleKind ruleKind, String org, String name) {
         String reportedSource = org + FORWARD_SLASH + name;
-        return new RuleImpl(reportedSource + ":" + numericId, numericId, description,
-                ruleKind);
+        return RuleImpl.builder()
+                .id(reportedSource + ":" + numericId)
+                .numericId(numericId)
+                .description(description)
+                .ruleKind(ruleKind)
+                .build();
     }
 
     /**
      * Returns a fully populated core static code analysis {@link Rule} instance, built from the
      * rich rule metadata bundled for built-in Ballerina rules.
      *
-     * @param metadata the rich metadata describing the core rule
+     * @param builder the rich metadata describing the core rule, staged in a {@link RuleImpl.Builder}
      * @return a core static code analysis rule instance carrying the full rule metadata
      */
-    static Rule createCoreRule(RuleMetadata metadata) {
-        String id = BALLERINA_RULE_PREFIX + metadata.numericId();
-        return new RuleImpl(id, metadata.numericId(), metadata.description(), metadata.ruleKind(), metadata.name(),
-                metadata.fullDescription(), buildHelpUriForMetadata(id, metadata), metadata.severity(),
-                metadata.tags(), metadata.standards());
+    static Rule createCoreRule(RuleImpl.Builder builder) {
+        String id = BALLERINA_RULE_PREFIX + builder.numericId();
+        return builder.id(id)
+                .helpUri(buildHelpUriForMetadata(id, builder))
+                .build();
     }
 
     /**
@@ -88,25 +97,25 @@ public class RuleFactory {
      * rich rule metadata a compiler plugin authored in its {@code rules.json} (see
      * {@link CoreRuleDefinition}, whose JSON shape is reused for external rules too).
      *
-     * @param metadata the rich metadata describing the external rule
-     * @param org      Ballerina package organisation name of the compiler plugin
-     * @param name     Ballerina package name of the compiler plugin
+     * @param builder the rich metadata describing the external rule, staged in a {@link RuleImpl.Builder}
+     * @param org     Ballerina package organisation name of the compiler plugin
+     * @param name    Ballerina package name of the compiler plugin
      * @return an external static code analysis rule instance carrying the full rule metadata
      */
-    static Rule createRule(RuleMetadata metadata, String org, String name) {
-        String id = org + FORWARD_SLASH + name + ":" + metadata.numericId();
-        return new RuleImpl(id, metadata.numericId(), metadata.description(), metadata.ruleKind(), metadata.name(),
-                metadata.fullDescription(), buildHelpUriForMetadata(id, metadata), metadata.severity(),
-                metadata.tags(), metadata.standards());
+    static Rule createRule(RuleImpl.Builder builder, String org, String name) {
+        String id = org + FORWARD_SLASH + name + ":" + builder.numericId();
+        return builder.id(id)
+                .helpUri(buildHelpUriForMetadata(id, builder))
+                .build();
     }
 
     /**
-     * Only used to build a valid helpUri slug; the (possibly null) {@code metadata.name()} is what
+     * Only used to build a valid helpUri slug; the (possibly null) {@code builder.name()} is what
      * actually gets stored/reported, so an unauthored name never leaks a duplicated description into
      * the output.
      */
-    private static String buildHelpUriForMetadata(String id, RuleMetadata metadata) {
-        String nameForSlug = metadata.name() != null ? metadata.name() : metadata.description();
+    private static String buildHelpUriForMetadata(String id, RuleImpl.Builder builder) {
+        String nameForSlug = builder.name() != null ? builder.name() : builder.description();
         return buildHelpUri(id, nameForSlug);
     }
 

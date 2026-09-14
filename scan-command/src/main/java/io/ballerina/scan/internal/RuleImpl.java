@@ -45,22 +45,17 @@ public class RuleImpl implements Rule {
     private final Standards standards;
     private final RuleKind ruleKind;
 
-    RuleImpl(String id, int numericId, String description, RuleKind ruleKind) {
-        this(id, numericId, description, ruleKind, null, null, null, null, null, null);
-    }
-
-    RuleImpl(String id, int numericId, String description, RuleKind ruleKind, String name, String fullDescription,
-             String helpUri, Severity severity, List<String> tags, Standards standards) {
-        this.id = id;
-        this.numericId = numericId;
-        this.description = description;
-        this.ruleKind = ruleKind;
-        this.name = name;
-        this.fullDescription = fullDescription;
-        this.helpUri = helpUri;
-        this.severity = severity;
-        this.tags = tags;
-        this.standards = standards;
+    private RuleImpl(Builder builder) {
+        this.id = builder.id;
+        this.numericId = builder.numericId;
+        this.description = builder.description;
+        this.ruleKind = builder.ruleKind;
+        this.name = builder.name;
+        this.fullDescription = builder.fullDescription;
+        this.helpUri = builder.helpUri;
+        this.severity = builder.severity;
+        this.tags = builder.tags;
+        this.standards = builder.standards;
     }
 
     @Override
@@ -111,5 +106,94 @@ public class RuleImpl implements Rule {
     @Override
     public Standards standards() {
         return standards;
+    }
+
+    static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * {@code Builder} stages the rich, authored metadata of a rule (numeric id, name, description,
+     * severity, tags, standards, etc.) before its fully qualified {@code id} and {@code helpUri} are
+     * known. Those are only computed by {@link RuleFactory} once it knows whether the rule being
+     * built is a core rule or an external (compiler-plugin authored) rule.
+     */
+    static final class Builder {
+        private String id;
+        private int numericId;
+        private String name;
+        private String description;
+        private String fullDescription;
+        private String helpUri;
+        private RuleKind ruleKind;
+        private Severity severity;
+        private List<String> tags;
+        private Standards standards;
+
+        Builder id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        Builder numericId(int numericId) {
+            this.numericId = numericId;
+            return this;
+        }
+
+        int numericId() {
+            return numericId;
+        }
+
+        Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        String name() {
+            return name;
+        }
+
+        Builder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        String description() {
+            return description;
+        }
+
+        Builder fullDescription(String fullDescription) {
+            this.fullDescription = fullDescription;
+            return this;
+        }
+
+        Builder helpUri(String helpUri) {
+            this.helpUri = helpUri;
+            return this;
+        }
+
+        Builder ruleKind(RuleKind ruleKind) {
+            this.ruleKind = ruleKind;
+            return this;
+        }
+
+        Builder severity(Severity severity) {
+            this.severity = severity;
+            return this;
+        }
+
+        Builder tags(List<String> tags) {
+            this.tags = tags;
+            return this;
+        }
+
+        Builder standards(Standards standards) {
+            this.standards = standards;
+            return this;
+        }
+
+        RuleImpl build() {
+            return new RuleImpl(this);
+        }
     }
 }
