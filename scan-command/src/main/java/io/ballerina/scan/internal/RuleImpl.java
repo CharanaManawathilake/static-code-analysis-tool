@@ -58,6 +58,33 @@ public class RuleImpl implements Rule {
         this.standards = builder.standards;
     }
 
+    private RuleImpl(RuleImpl staged, String id, String helpUri) {
+        this.id = id;
+        this.numericId = staged.numericId;
+        this.description = staged.description;
+        this.ruleKind = staged.ruleKind;
+        this.name = staged.name;
+        this.fullDescription = staged.fullDescription;
+        this.helpUri = helpUri;
+        this.severity = staged.severity;
+        this.tags = staged.tags;
+        this.standards = staged.standards;
+    }
+
+    /**
+     * Returns a copy of this rule with its {@code id} and {@code helpUri} replaced. Used by
+     * {@link RuleFactory} to fill in the fully qualified id/helpUri once known, after staging the
+     * rest of the rule's metadata through {@link Builder} - reading it back via the {@link Rule}
+     * getters below rather than exposing builder-only accessors.
+     *
+     * @param id      the fully qualified rule id to use
+     * @param helpUri the resolved helpUri to use
+     * @return a copy of this rule carrying the given id and helpUri
+     */
+    RuleImpl withIdAndHelpUri(String id, String helpUri) {
+        return new RuleImpl(this, id, helpUri);
+    }
+
     @Override
     public String id() {
         return id;
@@ -140,26 +167,14 @@ public class RuleImpl implements Rule {
             return this;
         }
 
-        int numericId() {
-            return numericId;
-        }
-
         Builder name(String name) {
             this.name = name;
             return this;
         }
 
-        String name() {
-            return name;
-        }
-
         Builder description(String description) {
             this.description = description;
             return this;
-        }
-
-        String description() {
-            return description;
         }
 
         Builder fullDescription(String fullDescription) {

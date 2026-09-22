@@ -18,6 +18,7 @@
 
 package io.ballerina.scan;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -50,5 +51,25 @@ public final class Standards {
      */
     public List<OwaspCoverage> owasp() {
         return owasp != null ? owasp : List.of();
+    }
+
+    /**
+     * Returns this coverage formatted as SARIF {@code properties.tags} entries:
+     * {@code external/cwe/cwe-*} for each {@link #cwe()} entry and
+     * {@code external/owasp/owasp-a*-*} for each {@link #owasp()} entry.
+     *
+     * @return the SARIF tag entries for this standards coverage, or an empty list when none
+     */
+    public List<String> toSarifTags() {
+        List<String> sarifTags = new ArrayList<>();
+        for (Integer cwe : cwe()) {
+            sarifTags.add("external/cwe/cwe-" + cwe);
+        }
+        for (OwaspCoverage coverage : owasp()) {
+            for (Integer category : coverage.categories()) {
+                sarifTags.add(String.format("external/owasp/owasp-a%02d-%d", category, coverage.year()));
+            }
+        }
+        return sarifTags;
     }
 }

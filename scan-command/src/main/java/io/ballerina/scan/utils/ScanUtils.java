@@ -28,13 +28,12 @@ import io.ballerina.projects.ProjectKind;
 import io.ballerina.projects.TomlDocument;
 import io.ballerina.projects.internal.model.Target;
 import io.ballerina.scan.Issue;
-import io.ballerina.scan.OwaspCoverage;
 import io.ballerina.scan.Rule;
 import io.ballerina.scan.RuleKind;
 import io.ballerina.scan.Severity;
 import io.ballerina.scan.Standards;
+import io.ballerina.scan.internal.HelpUriBuilder;
 import io.ballerina.scan.internal.IssueImpl;
-import io.ballerina.scan.internal.RuleFactory;
 import io.ballerina.toml.api.Toml;
 import io.ballerina.toml.semantic.TomlType;
 import io.ballerina.toml.semantic.ast.TomlArrayValueNode;
@@ -172,7 +171,7 @@ public final class ScanUtils {
         Map<String, String> fileContentCache = new HashMap<>();
         for (int i = 0; i < issues.size(); i++) {
             IssueImpl issueImpl = (IssueImpl) issues.get(i);
-            String snippetText = extractSnippet(issueImpl.filePath(), issueImpl.location().textRange(),
+            String snippetText = SnippetExtractor.extract(issueImpl.filePath(), issueImpl.location().textRange(),
                     fileContentCache);
             if (snippetText != null) {
                 issuesAsJson.get(i).getAsJsonObject().getAsJsonObject("location")
@@ -280,7 +279,7 @@ public final class ScanUtils {
             region.addProperty("charOffset", textRange.startOffset());
             region.addProperty("charLength", textRange.length());
 
-            String snippetText = extractSnippet(issueImpl.filePath(), textRange, fileContentCache);
+            String snippetText = SnippetExtractor.extract(issueImpl.filePath(), textRange, fileContentCache);
             if (snippetText != null) {
                 JsonObject snippet = new JsonObject();
                 snippet.addProperty("text", snippetText);
@@ -315,7 +314,7 @@ public final class ScanUtils {
         obj.addProperty("id", rule.id());
 
         String helpUri = rule.helpUri() != null ? rule.helpUri()
-                : RuleFactory.buildHelpUri(rule.id(), rule.name());
+                : HelpUriBuilder.buildHelpUri(rule.id(), rule.name());
         obj.addProperty("helpUri", helpUri);
 
         JsonObject shortDescription = new JsonObject();
@@ -391,47 +390,9 @@ public final class ScanUtils {
         }
         Standards standards = rule.standards();
         if (standards != null) {
-            for (Integer cwe : standards.cwe()) {
-                sarifTags.add("external/cwe/cwe-" + cwe);
-            }
-            for (OwaspCoverage coverage : standards.owasp()) {
-                for (Integer category : coverage.categories()) {
-                    sarifTags.add(String.format("external/owasp/owasp-a%02d-%d", category, coverage.year()));
-                }
-            }
+            sarifTags.addAll(standards.toSarifTags());
         }
         return sarifTags;
-    }
-
-    /**
-     * Extracts the exact source text an issue's location covers (from {@code textRange}), for use
-     * as a {@code snippet.text} value in both the SARIF and Ballerina JSON output. Returns
-     * {@code null} when the file cannot be read or the range falls outside its content, so callers
-     * can simply omit the snippet in that case.
-     *
-     * @param filePath       absolute path of the file the issue was found in
-     * @param textRange      the character range of the issue's location
-     * @param fileContentCache cache of file path to its full content, shared across a single report
-     * @return the source text covered by the range, or {@code null} when unavailable
-     */
-    private static String extractSnippet(String filePath, TextRange textRange,
-                                         Map<String, String> fileContentCache) {
-        String content = fileContentCache.computeIfAbsent(filePath, path -> {
-            try {
-                return Files.readString(Path.of(path), StandardCharsets.UTF_8);
-            } catch (IOException ex) {
-                return null;
-            }
-        });
-        if (content == null) {
-            return null;
-        }
-        int start = textRange.startOffset();
-        int end = start + textRange.length();
-        if (start < 0 || end > content.length() || start > end) {
-            return null;
-        }
-        return content.substring(start, end);
     }
 
     /**

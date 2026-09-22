@@ -21,10 +21,7 @@ package io.ballerina.scan.internal;
 import io.ballerina.scan.Rule;
 import io.ballerina.scan.RuleKind;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Locale;
-import java.util.Properties;
+import java.util.function.IntFunction;
 
 import static io.ballerina.scan.internal.ScanToolConstants.BALLERINA_RULE_PREFIX;
 import static io.ballerina.scan.internal.ScanToolConstants.FORWARD_SLASH;
@@ -34,9 +31,7 @@ import static io.ballerina.scan.internal.ScanToolConstants.FORWARD_SLASH;
  *
  * @since 0.1.0
  * */
-public class RuleFactory {
-
-    private static final String TOOL_VERSION = resolveToolVersion();
+class RuleFactory {
 
     /**
      * Returns a core static code analysis {@link Rule} instance.
@@ -49,7 +44,7 @@ public class RuleFactory {
      */
     static Rule createRule(int numericId, String description, RuleKind ruleKind) {
         return RuleImpl.builder()
-                .id(BALLERINA_RULE_PREFIX + numericId)
+                .id(coreRuleId(numericId))
                 .numericId(numericId)
                 .description(description)
                 .ruleKind(ruleKind)
@@ -68,9 +63,8 @@ public class RuleFactory {
      * @return an external static code analysis rule instance
      */
     static Rule createRule(int numericId, String description, RuleKind ruleKind, String org, String name) {
-        String reportedSource = org + FORWARD_SLASH + name;
         return RuleImpl.builder()
-                .id(reportedSource + ":" + numericId)
+                .id(externalRuleId(org, name, numericId))
                 .numericId(numericId)
                 .description(description)
                 .ruleKind(ruleKind)
@@ -85,10 +79,7 @@ public class RuleFactory {
      * @return a core static code analysis rule instance carrying the full rule metadata
      */
     static Rule createCoreRule(RuleImpl.Builder builder) {
-        String id = BALLERINA_RULE_PREFIX + builder.numericId();
-        return builder.id(id)
-                .helpUri(buildHelpUriForMetadata(id, builder))
-                .build();
+        return finalizeRule(builder, RuleFactory::coreRuleId);
     }
 
     /**
@@ -102,59 +93,26 @@ public class RuleFactory {
      * @return an external static code analysis rule instance carrying the full rule metadata
      */
     static Rule createRule(RuleImpl.Builder builder, String org, String name) {
-        String id = org + FORWARD_SLASH + name + ":" + builder.numericId();
-        return builder.id(id)
-                .helpUri(buildHelpUriForMetadata(id, builder))
-                .build();
+        return finalizeRule(builder, numericId -> externalRuleId(org, name, numericId));
     }
 
     /**
-     * Only used to build a valid helpUri slug; the (possibly null) {@code builder.name()} is what
-     * actually gets stored/reported, so an unauthored name never leaks a duplicated description into
-     * the output.
+     * Builds the staged rule from {@code builder}, then resolves its fully qualified id (via
+     * {@code idResolver}, applied to the staged rule's own numeric id) and helpUri - reading the
+     * rule's name back through the {@link Rule} getters rather than peeking at builder-only fields.
      */
-    private static String buildHelpUriForMetadata(String id, RuleImpl.Builder builder) {
-        String nameForSlug = builder.name() != null ? builder.name() : builder.description();
-        return buildHelpUri(id, nameForSlug);
+    private static Rule finalizeRule(RuleImpl.Builder builder, IntFunction<String> idResolver) {
+        RuleImpl staged = builder.build();
+        String id = idResolver.apply(staged.numericId());
+        return staged.withIdAndHelpUri(id, HelpUriBuilder.buildHelpUri(id, staged.name()));
     }
 
-    /**
-     * Constructs the helpUri for a rule based on its rule ID and human-readable name. Shared by
-     * SARIF generation (for every rule) and core-rule construction, so both formats surface the
-     * exact same value.
-     *
-     * @param ruleId the rule ID
-     * @param name   the rule's human-readable name
-     * @return the constructed helpUri
-     */
-    public static String buildHelpUri(String ruleId, String name) {
-        String baseUri = ScanToolConstants.SARIF_TOOL_HELP_BASE_URI + TOOL_VERSION;
-        String idPart = ruleId.replace(":", "").replace("/", "");
-        String namePart = name.toLowerCase(Locale.ROOT)
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("-$", "")
-                .replaceAll("^-", "");
-        return baseUri + "#" + idPart + "---" + namePart;
+    private static String coreRuleId(int numericId) {
+        return BALLERINA_RULE_PREFIX + numericId;
     }
 
-    /**
-     * Resolves the tool's application version the same way {@code Constants} does, kept as a
-     * local copy so this internal-package class does not need to depend on the {@code utils}
-     * package (which already depends on {@code internal}).
-     *
-     * @return the resolved application version
-     */
-    private static String resolveToolVersion() {
-        try (InputStream input = RuleFactory.class.getClassLoader().getResourceAsStream("version.properties")) {
-            if (input != null) {
-                Properties props = new Properties();
-                props.load(input);
-                return props.getProperty("app.version", "0.1.0");
-            }
-        } catch (IOException ignored) {
-            // Fall through to the default below, mirroring Constants#getAppVersion.
-        }
-        return System.getProperty("app.version", "0.1.0");
+    private static String externalRuleId(String org, String name, int numericId) {
+        return org + FORWARD_SLASH + name + ":" + numericId;
     }
 
     private RuleFactory() {
