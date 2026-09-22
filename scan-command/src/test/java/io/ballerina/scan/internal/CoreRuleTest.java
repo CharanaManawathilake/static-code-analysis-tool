@@ -95,7 +95,9 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.kind(), RuleKind.CODE_SMELL);
         Assert.assertEquals(rule.severity(), Severity.LOW);
         Assert.assertEquals(rule.tags(), List.of("unused"));
-        Assert.assertNull(rule.standards(), "rule 2 has no CWE/OWASP coverage");
+        Standards standards = rule.standards();
+        Assert.assertNotNull(standards);
+        Assert.assertEquals(standards.cwe(), List.of(561));
     }
 
     @Test(description = "test unused class fields rule")
@@ -195,10 +197,10 @@ public class CoreRuleTest {
         Assert.assertEquals(rule.numericId(), 13);
         Assert.assertEquals(rule.name(), HARD_CODED_SECRET);
         Assert.assertEquals(rule.kind(), RuleKind.VULNERABILITY);
-        Assert.assertEquals(rule.severity(), Severity.MEDIUM);
+        Assert.assertEquals(rule.severity(), Severity.HIGH);
         Assert.assertEquals(rule.tags(), List.of("security", "secrets", "credentials"));
         Standards standards = rule.standards();
-        Assert.assertEquals(standards.cwe(), List.of(798));
+        Assert.assertEquals(standards.cwe(), List.of(798, 259));
         Assert.assertEquals(standards.owasp().get(0).year(), 2025);
         Assert.assertEquals(standards.owasp().get(0).categories(), List.of(7));
     }

@@ -61,12 +61,12 @@ public final class CoreRuleOutputTest extends BaseTest {
     @Test(description = "test that standards is omitted, tags stay general, and severity/snippet are present "
             + "in the Ballerina JSON output")
     void testOptionalFieldsOmittedFromJsonOutput() {
-        Issue issue = new IssueImpl(location, CoreRule.UNUSED_FUNCTION_PARAMETER.rule(), Source.BUILT_IN, "main.bal",
-                balProject.resolve("main.bal").toString());
+        Issue issue = new IssueImpl(location, CoreRule.PUBLIC_NON_ISOLATED_FUNCTION_CONSTRUCT.rule(), Source.BUILT_IN,
+                "main.bal", balProject.resolve("main.bal").toString());
         String json = ScanUtils.convertIssuesToJsonString(List.of(issue));
 
         Assert.assertFalse(json.contains("\"standards\""),
-                "standards should be omitted since rule 2's metadata does not specify any CWE/OWASP coverage");
+                "standards should be omitted since rule 3's metadata does not specify any CWE/OWASP coverage");
         Assert.assertTrue(json.contains("\"severity\": \"LOW\""),
                 "severity should be present since every core rule now specifies one");
         Assert.assertTrue(json.contains("\"tags\""), "tags should still be present");
@@ -81,7 +81,7 @@ public final class CoreRuleOutputTest extends BaseTest {
                 balProject.resolve("main.bal").toString());
         String json = ScanUtils.convertIssuesToJsonString(List.of(issue));
 
-        Assert.assertTrue(json.contains("\"severity\": \"MEDIUM\""),
+        Assert.assertTrue(json.contains("\"severity\": \"HIGH\""),
                 "severity should be present since rule 13's metadata specifies one");
         Assert.assertTrue(json.contains("\"standards\""),
                 "standards should be present since rule 13's metadata specifies CWE/OWASP coverage");
