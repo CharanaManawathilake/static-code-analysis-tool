@@ -100,7 +100,7 @@ public class RuleImpl implements Rule {
 
     @Override
     public List<String> tags() {
-        return tags != null ? List.copyOf(tags) : null;
+        return tags != null ? List.copyOf(tags) : List.of();
     }
 
     @Override

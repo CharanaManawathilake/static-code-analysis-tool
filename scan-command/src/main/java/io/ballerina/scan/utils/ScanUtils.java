@@ -257,7 +257,7 @@ public final class ScanUtils {
             result.addProperty("level", resolveSarifLevel(rule));
 
             JsonObject message = new JsonObject();
-            message.addProperty("text", rule.description());
+            message.addProperty("text", rule.name());
             result.add("message", message);
 
             // Create locations array
@@ -322,9 +322,7 @@ public final class ScanUtils {
         shortDescription.addProperty("text", rule.description());
         obj.add("shortDescription", shortDescription);
 
-        // Rule#fullDescription() defaults to description() when the rule never authored a distinct
-        // long description (see Rule.fullDescription() javadoc), so only emit SARIF's fullDescription
-        // when it actually differs - otherwise it would just duplicate shortDescription's text.
+        // fullDescription() falls back to description(), so only emit it when it's actually distinct.
         if (rule.fullDescription() != null && !rule.fullDescription().equals(rule.description())) {
             JsonObject fullDescription = new JsonObject();
             fullDescription.addProperty("text", rule.fullDescription());

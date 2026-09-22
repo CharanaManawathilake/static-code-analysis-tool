@@ -36,7 +36,6 @@ import static io.ballerina.scan.internal.ScanToolConstants.FORWARD_SLASH;
  * */
 public class RuleFactory {
 
-    private static final String SARIF_TOOL_HELP_BASE_URI = "https://central.ballerina.io/ballerina/tool_scan/";
     private static final String TOOL_VERSION = resolveToolVersion();
 
     /**
@@ -129,7 +128,7 @@ public class RuleFactory {
      * @return the constructed helpUri
      */
     public static String buildHelpUri(String ruleId, String name) {
-        String baseUri = SARIF_TOOL_HELP_BASE_URI + TOOL_VERSION;
+        String baseUri = ScanToolConstants.SARIF_TOOL_HELP_BASE_URI + TOOL_VERSION;
         String idPart = ruleId.replace(":", "").replace("/", "");
         String namePart = name.toLowerCase(Locale.ROOT)
                 .replaceAll("[^a-z0-9]+", "-")
@@ -147,19 +146,15 @@ public class RuleFactory {
      */
     private static String resolveToolVersion() {
         try (InputStream input = RuleFactory.class.getClassLoader().getResourceAsStream("version.properties")) {
-            if (input == null) {
-                throw new IllegalStateException("version.properties resource not found on classpath");
+            if (input != null) {
+                Properties props = new Properties();
+                props.load(input);
+                return props.getProperty("app.version", "0.1.0");
             }
-            Properties props = new Properties();
-            props.load(input);
-            String version = props.getProperty("app.version");
-            if (version == null) {
-                throw new IllegalStateException("app.version property missing from version.properties");
-            }
-            return version;
-        } catch (IOException ex) {
-            throw new IllegalStateException("failed to load version.properties", ex);
+        } catch (IOException ignored) {
+            // Fall through to the default below, mirroring Constants#getAppVersion.
         }
+        return System.getProperty("app.version", "0.1.0");
     }
 
     private RuleFactory() {
