@@ -98,13 +98,12 @@ class RuleFactory {
 
     /**
      * Builds the staged rule from {@code builder}, then resolves its fully qualified id (via
-     * {@code idResolver}, applied to the staged rule's own numeric id) and helpUri - reading the
-     * rule's name back through the {@link Rule} getters rather than peeking at builder-only fields.
+     * {@code idResolver}, applied to the staged rule's own numeric id). The helpUri is taken as
+     * authored in the rule metadata and left {@code null} when absent.
      */
     private static Rule finalizeRule(RuleImpl.Builder builder, IntFunction<String> idResolver) {
         RuleImpl staged = builder.build();
-        String id = idResolver.apply(staged.numericId());
-        return staged.withIdAndHelpUri(id, HelpUriBuilder.buildHelpUri(id, staged.name()));
+        return staged.withId(idResolver.apply(staged.numericId()));
     }
 
     private static String coreRuleId(int numericId) {

@@ -56,31 +56,30 @@ public class RuleImpl implements Rule {
         this.standards = builder.standards;
     }
 
-    private RuleImpl(RuleImpl staged, String id, String helpUri) {
+    private RuleImpl(RuleImpl staged, String id) {
         this.id = id;
         this.numericId = staged.numericId;
         this.description = staged.description;
         this.ruleKind = staged.ruleKind;
         this.name = staged.name;
         this.details = staged.details;
-        this.helpUri = helpUri;
+        this.helpUri = staged.helpUri;
         this.severity = staged.severity;
         this.tags = staged.tags;
         this.standards = staged.standards;
     }
 
     /**
-     * Returns a copy of this rule with its {@code id} and {@code helpUri} replaced. Used by
-     * {@link RuleFactory} to fill in the fully qualified id/helpUri once known, after staging the
-     * rest of the rule's metadata through {@link Builder} - reading it back via the {@link Rule}
-     * getters below rather than exposing builder-only accessors.
+     * Returns a copy of this rule with its {@code id} replaced. Used by {@link RuleFactory} to fill
+     * in the fully qualified id once known, after staging the rest of the rule's metadata through
+     * {@link Builder} - reading it back via the {@link Rule} getters below rather than exposing
+     * builder-only accessors.
      *
-     * @param id      the fully qualified rule id to use
-     * @param helpUri the resolved helpUri to use
-     * @return a copy of this rule carrying the given id and helpUri
+     * @param id the fully qualified rule id to use
+     * @return a copy of this rule carrying the given id
      */
-    RuleImpl withIdAndHelpUri(String id, String helpUri) {
-        return new RuleImpl(this, id, helpUri);
+    RuleImpl withId(String id) {
+        return new RuleImpl(this, id);
     }
 
     @Override
@@ -139,8 +138,8 @@ public class RuleImpl implements Rule {
 
     /**
      * {@code Builder} stages the rich, authored metadata of a rule (numeric id, name, description,
-     * severity, tags, standards, etc.) before its fully qualified {@code id} and {@code helpUri} are
-     * known. Those are only computed by {@link RuleFactory} once it knows whether the rule being
+     * severity, tags, standards, helpUri, etc.) before its fully qualified {@code id} is
+     * known. That is only computed by {@link RuleFactory} once it knows whether the rule being
      * built is a core rule or an external (compiler-plugin authored) rule.
      */
     static final class Builder {

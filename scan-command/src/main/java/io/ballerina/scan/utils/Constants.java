@@ -18,8 +18,6 @@
 
 package io.ballerina.scan.utils;
 
-import io.ballerina.scan.internal.ScanToolConstants;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -78,7 +76,6 @@ public class Constants {
     public static final String SARIF_TOOL_NAME = "Ballerina Scan Tool";
     public static final String SARIF_TOOL_ORGANIZATION = "WSO2";
     public static final String SARIF_TOOL_VERSION = getAppVersion();
-    public static final String SARIF_TOOL_URI = ScanToolConstants.SARIF_TOOL_HELP_BASE_URI;
 
     private static String getAppVersion() {
         try (InputStream input = Constants.class.getClassLoader().getResourceAsStream("version.properties")) {

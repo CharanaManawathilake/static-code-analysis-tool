@@ -32,7 +32,6 @@ import io.ballerina.scan.Rule;
 import io.ballerina.scan.RuleKind;
 import io.ballerina.scan.Severity;
 import io.ballerina.scan.Standards;
-import io.ballerina.scan.internal.HelpUriBuilder;
 import io.ballerina.scan.internal.IssueImpl;
 import io.ballerina.toml.api.Toml;
 import io.ballerina.toml.semantic.TomlType;
@@ -96,7 +95,6 @@ import static io.ballerina.scan.utils.Constants.RULES_TABLE;
 import static io.ballerina.scan.utils.Constants.SARIF_SCHEMA;
 import static io.ballerina.scan.utils.Constants.SARIF_TOOL_NAME;
 import static io.ballerina.scan.utils.Constants.SARIF_TOOL_ORGANIZATION;
-import static io.ballerina.scan.utils.Constants.SARIF_TOOL_URI;
 import static io.ballerina.scan.utils.Constants.SARIF_TOOL_VERSION;
 import static io.ballerina.scan.utils.Constants.SARIF_VERSION;
 import static io.ballerina.scan.utils.Constants.SCAN_FILE;
@@ -217,7 +215,6 @@ public final class ScanUtils {
         driver.addProperty("name", SARIF_TOOL_NAME);
         driver.addProperty("organization", SARIF_TOOL_ORGANIZATION);
         driver.addProperty("semanticVersion", SARIF_TOOL_VERSION);
-        driver.addProperty("informationUri", SARIF_TOOL_URI + SARIF_TOOL_VERSION);
 
         // Create rules array for the tool
         JsonArray rules = new JsonArray();
@@ -313,9 +310,10 @@ public final class ScanUtils {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", rule.id());
 
-        String helpUri = rule.helpUri() != null ? rule.helpUri()
-                : HelpUriBuilder.buildHelpUri(rule.id(), rule.name());
-        obj.addProperty("helpUri", helpUri);
+        // Only rules whose metadata authors a helpUri get one; older plugin rules.json files omit it.
+        if (rule.helpUri() != null) {
+            obj.addProperty("helpUri", rule.helpUri());
+        }
 
         JsonObject shortDescription = new JsonObject();
         shortDescription.addProperty("text", rule.description());

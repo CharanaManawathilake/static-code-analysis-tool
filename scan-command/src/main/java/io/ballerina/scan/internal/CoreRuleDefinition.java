@@ -38,6 +38,7 @@ final class CoreRuleDefinition {
     private String name;
     private String description;
     private String fullDescription;
+    private String helpUri;
     private String severity;
     private List<String> tags;
     private Standards standards;
@@ -48,6 +49,7 @@ final class CoreRuleDefinition {
                 .name(name)
                 .description(description)
                 .details(fullDescription)
+                .helpUri(helpUri)
                 .ruleKind(RuleKind.valueOf(kind))
                 .severity(severity != null ? Severity.valueOf(severity) : null)
                 .tags(tags != null ? tags : List.of())

@@ -33,7 +33,6 @@ public class ScanToolConstants {
     static final String IMPORT_GENERATOR_FILE = "scan_file";
     static final String RULES_FILE = "rules.json";
     static final String CORE_RULES_DIRECTORY = "core-rules/";
-    public static final String SARIF_TOOL_HELP_BASE_URI = "https://central.ballerina.io/ballerina/tool_scan/";
     static final String RULE_KIND = "kind";
     static final String RULE_ID = "id";
     static final String RULE_DESCRIPTION = "description";

@@ -14,7 +14,6 @@
       "id": "ballerina/example_module_static_code_analyzer:1",
       "numericId": 1,
       "description": "rule 1",
-      "helpUri": "https://central.ballerina.io/ballerina/tool_scan/0.12.0#ballerinaexample_module_static_code_analyzer1---rule-1",
       "tags": [],
       "ruleKind": "CODE_SMELL"
     },
@@ -37,7 +36,6 @@
       "id": "exampleOrg/example_module_static_code_analyzer:1",
       "numericId": 1,
       "description": "rule 1",
-      "helpUri": "https://central.ballerina.io/ballerina/tool_scan/0.12.0#exampleOrgexample_module_static_code_analyzer1---rule-1",
       "tags": [],
       "ruleKind": "CODE_SMELL"
     },
@@ -60,7 +58,6 @@
       "id": "ballerinax/example_module_static_code_analyzer:1",
       "numericId": 1,
       "description": "rule 1",
-      "helpUri": "https://central.ballerina.io/ballerina/tool_scan/0.12.0#ballerinaxexample_module_static_code_analyzer1---rule-1",
       "tags": [],
       "ruleKind": "CODE_SMELL"
     },
