@@ -64,7 +64,7 @@ enum CoreRule {
     }
 
     Rule rule() {
-        return CoreRulesLoader.getRule(numericId);
+        return CoreRulesEngine.getRule(numericId);
     }
 
     static List<Rule> rules() {
@@ -75,7 +75,7 @@ enum CoreRule {
         return coreRules;
     }
 
-    private static final class CoreRulesLoader {
+    private static final class CoreRulesEngine {
 
         private static final Map<Integer, Rule> RULES_BY_ID = loadRules();
 
@@ -89,7 +89,7 @@ enum CoreRule {
 
         private static Map<Integer, Rule> loadRules() {
             String resourcePath = CORE_RULES_DIRECTORY + RULES_FILE;
-            try (InputStream input = CoreRulesLoader.class.getClassLoader().getResourceAsStream(resourcePath)) {
+            try (InputStream input = CoreRulesEngine.class.getClassLoader().getResourceAsStream(resourcePath)) {
                 if (input == null) {
                     throw new IllegalStateException("Missing core rules metadata resource: " + resourcePath);
                 }
@@ -106,7 +106,7 @@ enum CoreRule {
             }
         }
 
-        private CoreRulesLoader() {
+        private CoreRulesEngine() {
         }
     }
 }

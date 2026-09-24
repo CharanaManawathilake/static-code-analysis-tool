@@ -76,7 +76,7 @@ public class RuleImplTest {
         Assert.assertEquals(rule.kind(), RuleKind.VULNERABILITY);
         Assert.assertEquals(rule.name(), "Path injection");
         Assert.assertEquals(rule.description(), "I/O calls should not be vulnerable to path injection");
-        Assert.assertEquals(rule.fullDescription(), "Passing unsanitized user input to an I/O function can let an "
+        Assert.assertEquals(rule.details(), "Passing unsanitized user input to an I/O function can let an "
                 + "attacker read or write arbitrary files.");
         Assert.assertEquals(rule.severity(), Severity.HIGH);
         Assert.assertEquals(rule.tags(), List.of("security"));
@@ -93,7 +93,7 @@ public class RuleImplTest {
 
         Assert.assertEquals(rule.id(), "exampleOrg/exampleName:1");
         Assert.assertEquals(rule.name(), "rule 1");
-        Assert.assertEquals(rule.fullDescription(), "rule 1");
+        Assert.assertEquals(rule.details(), "rule 1");
         Assert.assertNull(rule.severity());
         Assert.assertTrue(rule.tags().isEmpty());
         Assert.assertNull(rule.standards());

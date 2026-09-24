@@ -47,7 +47,7 @@ final class CoreRuleDefinition {
                 .numericId(id)
                 .name(name)
                 .description(description)
-                .fullDescription(fullDescription)
+                .details(fullDescription)
                 .ruleKind(RuleKind.valueOf(kind))
                 .severity(severity != null ? Severity.valueOf(severity) : null)
                 .tags(tags != null ? tags : List.of())

@@ -70,7 +70,7 @@ public interface Rule {
      *
      * @return full description of the rule
      */
-    default String fullDescription() {
+    default String details() {
         return description();
     }
 

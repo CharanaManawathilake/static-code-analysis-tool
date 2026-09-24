@@ -71,7 +71,7 @@ public final class CoreRuleOutputTest extends BaseTest {
                 "severity should be present since every core rule now specifies one");
         Assert.assertTrue(json.contains("\"tags\""), "tags should still be present");
         Assert.assertTrue(json.contains("\"details\""),
-                "fullDescription should be serialized as \"details\" in the Ballerina JSON output");
+                "details should be serialized as \"details\" in the Ballerina JSON output");
         Assert.assertTrue(json.contains("\"snippet\": \""), "snippet should be a plain string in Ballerina JSON");
     }
 

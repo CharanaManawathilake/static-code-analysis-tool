@@ -18,7 +18,6 @@
 
 package io.ballerina.scan.internal;
 
-import com.google.gson.annotations.SerializedName;
 import io.ballerina.scan.Rule;
 import io.ballerina.scan.RuleKind;
 import io.ballerina.scan.Severity;
@@ -37,8 +36,7 @@ public class RuleImpl implements Rule {
     private final int numericId;
     private final String name;
     private final String description;
-    @SerializedName("details")
-    private final String fullDescription;
+    private final String details;
     private final String helpUri;
     private final Severity severity;
     private final List<String> tags;
@@ -51,7 +49,7 @@ public class RuleImpl implements Rule {
         this.description = builder.description;
         this.ruleKind = builder.ruleKind;
         this.name = builder.name;
-        this.fullDescription = builder.fullDescription;
+        this.details = builder.details;
         this.helpUri = builder.helpUri;
         this.severity = builder.severity;
         this.tags = builder.tags;
@@ -64,7 +62,7 @@ public class RuleImpl implements Rule {
         this.description = staged.description;
         this.ruleKind = staged.ruleKind;
         this.name = staged.name;
-        this.fullDescription = staged.fullDescription;
+        this.details = staged.details;
         this.helpUri = helpUri;
         this.severity = staged.severity;
         this.tags = staged.tags;
@@ -111,8 +109,8 @@ public class RuleImpl implements Rule {
     }
 
     @Override
-    public String fullDescription() {
-        return fullDescription != null ? fullDescription : description;
+    public String details() {
+        return details != null ? details : description;
     }
 
     @Override
@@ -150,7 +148,7 @@ public class RuleImpl implements Rule {
         private int numericId;
         private String name;
         private String description;
-        private String fullDescription;
+        private String details;
         private String helpUri;
         private RuleKind ruleKind;
         private Severity severity;
@@ -177,8 +175,8 @@ public class RuleImpl implements Rule {
             return this;
         }
 
-        Builder fullDescription(String fullDescription) {
-            this.fullDescription = fullDescription;
+        Builder details(String details) {
+            this.details = details;
             return this;
         }
 

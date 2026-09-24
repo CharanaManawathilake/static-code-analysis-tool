@@ -63,7 +63,7 @@ public class CoreRuleTest {
             Assert.assertNotNull(rule.description(), "description should be populated for " + rule.id());
             Assert.assertNotEquals(rule.description(), rule.name(),
                     "description should be a genuine short description, not just repeat name, for " + rule.id());
-            Assert.assertNotNull(rule.fullDescription(), "fullDescription should be populated for " + rule.id());
+            Assert.assertNotNull(rule.details(), "details should be populated for " + rule.id());
             Assert.assertNotNull(rule.helpUri(), "helpUri should be populated for " + rule.id());
             Assert.assertNotNull(rule.severity(), "severity should be populated for " + rule.id());
         }

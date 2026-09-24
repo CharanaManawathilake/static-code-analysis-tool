@@ -321,10 +321,10 @@ public final class ScanUtils {
         shortDescription.addProperty("text", rule.description());
         obj.add("shortDescription", shortDescription);
 
-        // fullDescription() falls back to description(), so only emit it when it's actually distinct.
-        if (rule.fullDescription() != null && !rule.fullDescription().equals(rule.description())) {
+        // details() falls back to description(), so only emit it when it's actually distinct.
+        if (rule.details() != null && !rule.details().equals(rule.description())) {
             JsonObject fullDescription = new JsonObject();
-            fullDescription.addProperty("text", rule.fullDescription());
+            fullDescription.addProperty("text", rule.details());
             obj.add("fullDescription", fullDescription);
         }
 
