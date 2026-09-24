@@ -91,6 +91,7 @@ import static io.ballerina.scan.utils.Constants.RULE_DESCRIPTION_COLUMN;
 import static io.ballerina.scan.utils.Constants.RULE_ID_COLUMN;
 import static io.ballerina.scan.utils.Constants.RULE_KIND_COLUMN;
 import static io.ballerina.scan.utils.Constants.RULE_PRIORITY_LIST;
+import static io.ballerina.scan.utils.Constants.RULE_SEVERITY_COLUMN;
 import static io.ballerina.scan.utils.Constants.RULES_TABLE;
 import static io.ballerina.scan.utils.Constants.SARIF_SCHEMA;
 import static io.ballerina.scan.utils.Constants.SARIF_TOOL_NAME;
@@ -887,29 +888,41 @@ public final class ScanUtils {
      */
     public static void printRulesToConsole(List<Rule> rules, PrintStream outputStream) {
         int maxRuleIDLength = RULE_ID_COLUMN.length();
-        int maxSeverityLength = RULE_KIND_COLUMN.length();
+        int maxKindLength = RULE_KIND_COLUMN.length();
+        int maxSeverityLength = RULE_SEVERITY_COLUMN.length();
         int maxDescriptionLength = RULE_DESCRIPTION_COLUMN.length();
 
         for (Rule rule : rules) {
             maxRuleIDLength = Math.max(maxRuleIDLength, rule.id().length());
-            maxSeverityLength = Math.max(maxSeverityLength, rule.kind().toString().length());
+            maxKindLength = Math.max(maxKindLength, rule.kind().toString().length());
+            maxSeverityLength = Math.max(maxSeverityLength, severityLabel(rule).length());
             maxDescriptionLength = Math.max(maxDescriptionLength, rule.name().length());
         }
 
-        String format = "\t%-" + maxRuleIDLength + "s | %-" + maxSeverityLength + "s | %-" + maxDescriptionLength
-                + "s%n";
+        String format = "\t%-" + maxRuleIDLength + "s | %-" + maxKindLength + "s | %-" + maxSeverityLength
+                + "s | %-" + maxDescriptionLength + "s%n";
 
-        outputStream.printf(format, RULE_ID_COLUMN, RULE_KIND_COLUMN, RULE_DESCRIPTION_COLUMN);
-        outputStream.printf("\t%s--%s--%s%n",
+        outputStream.printf(format, RULE_ID_COLUMN, RULE_KIND_COLUMN, RULE_SEVERITY_COLUMN, RULE_DESCRIPTION_COLUMN);
+        outputStream.printf("\t%s--%s--%s--%s%n",
                 "-".repeat(maxRuleIDLength + 1),
+                "-".repeat(maxKindLength + 1),
                 "-".repeat(maxSeverityLength + 1),
                 "-".repeat(maxDescriptionLength + 1));
 
         sortRules(rules);
         for (Rule rule : rules) {
-            String formattedLine = String.format(format, rule.id(), rule.kind().toString(), rule.name());
+            String formattedLine = String.format(format, rule.id(), rule.kind().toString(), severityLabel(rule),
+                    rule.name());
             outputStream.println(formattedLine.stripTrailing());
         }
+    }
+
+    /**
+     * Returns the severity to show for a rule in the rules table, or {@code -} when the rule's
+     * metadata does not declare one (e.g. rules from older compiler plugin {@code rules.json} files).
+     */
+    private static String severityLabel(Rule rule) {
+        return rule.severity() != null ? rule.severity().toString() : "-";
     }
 
     /**

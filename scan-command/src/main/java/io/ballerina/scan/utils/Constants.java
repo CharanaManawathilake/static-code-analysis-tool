@@ -66,6 +66,7 @@ public class Constants {
     static final String CUSTOM_RULES_COMPILER_PLUGIN_VERSION_PATTERN = "^\\d+\\.\\d+\\.\\d+$";
     static final String RULE_ID_COLUMN = "RuleID";
     static final String RULE_KIND_COLUMN = "Rule Kind";
+    static final String RULE_SEVERITY_COLUMN = "Severity";
     static final String RULE_DESCRIPTION_COLUMN = "Rule Description";
     static final String[] RULE_PRIORITY_LIST = {"ballerina", "ballerinax", "wso2"};
     public static final String MAIN_FUNCTION = "main";
