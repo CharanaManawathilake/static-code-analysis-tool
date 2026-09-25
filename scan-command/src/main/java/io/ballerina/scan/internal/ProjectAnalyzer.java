@@ -228,8 +228,9 @@ public class ProjectAnalyzer {
         for (JsonElement rule : ruleArray) {
             JsonObject ruleObject = getRuleObject(pluginName, rule);
             getRuleKind(pluginName, ruleObject.get(RULE_KIND).getAsString());
-            if (ruleObject.has(RULE_SEVERITY)) {
-                getSeverity(pluginName, ruleObject.get(RULE_SEVERITY).getAsString());
+            JsonElement severity = ruleObject.get(RULE_SEVERITY);
+            if (severity != null && !severity.isJsonNull()) {
+                getSeverity(pluginName, severity.isJsonPrimitive() ? severity.getAsString() : severity.toString());
             }
             CoreRuleDefinition definition = gson.fromJson(ruleObject, CoreRuleDefinition.class);
             Rule inMemoryRule = RuleFactory.createRule(definition.toRuleBuilder(), org, name);
