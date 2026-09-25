@@ -274,7 +274,8 @@ public class ScanCmdTest extends BaseTest {
         String[] args = {nonProjectPath.toString(), "--list-rules"};
         new CommandLine(scanCmd).parseArgs(args);
         scanCmd.execute();
-        String expected = getExpectedOutput("core-rules-output.txt");
+        String expected = "The specified path is not a valid Ballerina project: " + nonProjectPath + ". Please "
+                + "provide a valid Ballerina project path and try again.";
         Assert.assertEquals(readOutput(true).trim(), expected);
     }
 
@@ -287,7 +288,8 @@ public class ScanCmdTest extends BaseTest {
         new CommandLine(scanCmd).parseArgs(args);
         scanCmd.execute();
         System.setProperty("user.dir", userDir);
-        String expected = getExpectedOutput("core-rules-output.txt");
+        String expected = "The specified path is not a valid Ballerina project: " + nonProjectPath + ". Please "
+                + "provide a valid Ballerina project path and try again.";
         Assert.assertEquals(readOutput(true).trim(), expected);
     }
 

@@ -4,7 +4,7 @@
 
 Static Code Analysis (SCA) uses tools to examine code without executing it. It is used for identifying potential issues like bugs, vulnerabilities, and code smells early, improving software quality, maintainability, and security. Ballerina supports SCA using the Ballerina scan tool.
 
-The scan tool compiles and performs static code analysis, prints results to the console, and reports results. It analyzes the source code defined in each module when compiling a package, or analyzes the given source file when compiling a single Ballerina file.
+The scan tool compiles and performs static code analysis, prints results to the console, and reports results. It analyzes the source code defined in each module when compiling a package, analyzes each package in dependency order when compiling a workspace, or analyzes the given source file when compiling a single Ballerina file.
 
 > **Note**: Analyzing individual Ballerina files of a package is not allowed.
 
@@ -17,20 +17,22 @@ Each issue reported by the tool is backed by a **rule**. Every rule has a `sever
 **Synopsis:**
 
 ```bash
-bal scan [OPTIONS] [<package>|<source-file>]
+bal scan [OPTIONS] [<workspace>|<package>|<source-file>]
 ```
 
 **Options:**
 
+All options are optional. Rule filters and platforms can also be configured in a `Scan.toml` file. See [Configuration](#configuration).
+
 | Option | Description |
 |--------|-------------|
-| `--target-dir=<path>` | Target directory path for saving analysis reports (only for Ballerina projects). |
-| `--scan-report` | Generate an HTML report containing the analysis results (only for Ballerina projects). |
+| `--target-dir=<path>` | Target directory path for saving analysis reports (only for Ballerina projects). Default is the project's `target` directory. |
+| `--scan-report` | Generate an HTML report containing the analysis results (only for Ballerina projects). Disabled by default. |
 | `--format=<json\|sarif>` | Specify the format of the report. Default is `json`. |
-| `--list-rules` | List all available rules, along with their kind and severity. |
-| `--include-rules=<rule1, ...>` | Run analysis for a specific set of rules. |
-| `--exclude-rules=<rule1, ...>` | Exclude analysis for a specific set of rules. |
-| `--platforms=<platformName1, ...>` | Define platform(s) to report results to. More than one platform can be defined. |
+| `--list-rules` | List the rules available to the project, along with their kind and severity. Only works inside a Ballerina project. Lists the core rules and the rules contributed by the project's dependencies (library tools and static code analyzer plugins) only. |
+| `--include-rules=<rule1, ...>` | Run analysis for a specific set of rules. By default, all available rules are included. |
+| `--exclude-rules=<rule1, ...>` | Exclude analysis for a specific set of rules. By default, no rules are excluded. |
+| `--platforms=<platformName1, ...>` | Define platform(s) to report results to. More than one platform can be defined. By default, results are not reported to any platform. |
 
 ## Examples
 
@@ -55,7 +57,7 @@ bal scan --format=json
 # Run analysis and generate a report in SARIF format.
 bal scan --format=sarif
 
-# View all available rules.
+# View the rules available to the current package.
 bal scan --list-rules
 
 # Run analysis for a specific rule.
@@ -79,16 +81,16 @@ bal scan --platforms="sonarqube, semgrep, codeql"
 
 ### Example output
 
-Running `bal scan --list-rules` prints a table of every available rule with its kind and severity:
+Running `bal scan --list-rules` inside a Ballerina project prints a table of the rules available to it with their kind and severity:
 
 ```
-RuleID       | Rule Kind    | Rule Description
--------------|--------------|----------------------------------------------
-ballerina:1  | CODE_SMELL   | Avoid checkpanic
-ballerina:2  | CODE_SMELL   | Unused function parameter
+RuleID       | Rule Kind     | Severity | Rule Description
+-------------|---------------|----------|-------------------------------------------------
+ballerina:1  | CODE_SMELL    | LOW      | Avoid checkpanic
+ballerina:2  | CODE_SMELL    | LOW      | Unused function parameter
 ...
-ballerina:13 | VULNERABILITY| Hard-coded secrets are security-sensitive
-ballerina:14 | VULNERABILITY| Non configurable secrets are security-sensitive
+ballerina:13 | VULNERABILITY | HIGH     | Hard-coded secrets are security-sensitive
+ballerina:14 | VULNERABILITY | MEDIUM   | Non configurable secrets are security-sensitive
 ...
 ```
 
@@ -118,6 +120,35 @@ Running `bal scan` reports each finding as a JSON issue with its location and fu
   }
 ]
 ```
+
+## Configuration
+
+Rule filters, platform plugins, and static code analyzer plugins can also be configured in a `Scan.toml` file (only for Ballerina projects). The tool picks up a `Scan.toml` in the package root, or the file (local path or URL) specified in `Ballerina.toml`:
+
+```toml
+[scan]
+configPath = "path/to/Scan.toml"
+```
+
+A sample `Scan.toml`:
+
+```toml
+# Rules to include or exclude in the analysis (same as --include-rules and --exclude-rules)
+[rule]
+include = ["ballerina:1", "ballerina/io:101"]
+# exclude = ["ballerina:1"]
+
+# Platform plugins to report results to (enables reporting; required for --platforms)
+[[platform]]
+name = "sonarqube"
+path = "path/to/sonar_platform_plugin.jar"
+```
+
+Rules specified in `Scan.toml` are combined with those passed via `--include-rules` and `--exclude-rules`. Including and excluding rules at the same time is not allowed.
+
+Each `[[platform]]` entry requires both a `name` and a `path`. The `path` must point to the platform plugin JAR, either as a local file path (resolved relative to the current working directory) or as a URL to download it from. A platform declared in `Scan.toml` is reported to automatically, and `--platforms` can only reference platforms declared there. When results are reported to a platform, they are not printed to the console or saved to the target directory.
+
+See [Scan file configurations](https://github.com/ballerina-platform/static-code-analysis-tool/blob/main/docs/static-code-analysis-tool/ScanFileConfigurations.md) for all available options.
 
 ## Rules
 
@@ -158,6 +189,4 @@ The language-level rules below are defined within this tool.
 
 ### Library tools
 
-Rules for other Ballerina libraries (`ballerina/file`, `ballerina/http`, `ballerina/io`, `ballerina/log`, `ballerina/os`, etc.) are specified separately by each library's own compiler plugin and are reported alongside the core rules when that library is used in the project being scanned. Refer to [ballerina.io/learn/scan-rules](https://ballerina.io/learn/scan-rules/) for the full list of rules contributed by each library tool.
-
-> **Note**: Run `bal scan --list-rules` inside a Ballerina project to see the complete set of rules available to it, including any additional rules contributed by library tools or static code analysis platforms.
+Rules for other Ballerina libraries (`ballerina/file`, `ballerina/http`, `ballerina/io`, `ballerina/log`, `ballerina/os`, etc.) are specified separately by each library's own compiler plugin and are reported alongside the core rules when that library is used in the project being scanned. Refer to [ballerina.io/learn/scan-rules](https://ballerina.io/learn/scan-rules/#library-rules) for the full list of rules contributed by each library tool.
