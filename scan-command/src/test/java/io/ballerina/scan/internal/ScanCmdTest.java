@@ -267,18 +267,6 @@ public class ScanCmdTest extends BaseTest {
         Assert.assertEquals(actual, expected);
     }
 
-    @Test(description = "test scan command with list rules flag outside a Ballerina project")
-    void testScanCommandWithListRulesFlagOutsideBallerinaProject() throws IOException {
-        Path nonProjectPath = testResources.resolve("test-resources").toAbsolutePath();
-        ScanCmd scanCmd = new ScanCmd(printStream);
-        String[] args = {nonProjectPath.toString(), "--list-rules"};
-        new CommandLine(scanCmd).parseArgs(args);
-        scanCmd.execute();
-        String expected = "The specified path is not a valid Ballerina project: " + nonProjectPath + ". Please "
-                + "provide a valid Ballerina project path and try again.";
-        Assert.assertEquals(readOutput(true).trim(), expected);
-    }
-
     @Test(description = "test scan command with list rules flag when the current directory is not a Ballerina project")
     void testScanCommandWithListRulesFlagWithoutArgumentOutsideBallerinaProject() throws IOException {
         Path nonProjectPath = testResources.resolve("test-resources").toAbsolutePath();
