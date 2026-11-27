@@ -26,6 +26,8 @@ import io.ballerina.tools.text.LineRange;
 import io.ballerina.tools.text.TextRange;
 import org.wso2.ballerinalang.compiler.diagnostic.BLangDiagnosticLocation;
 
+import java.util.Map;
+
 /**
  * Represents the implementation of the {@link Issue} interface.
  *
@@ -37,6 +39,9 @@ public class IssueImpl implements Issue {
     private final Source source;
     private final String fileName;
     private final String filePath;
+    // Transient, so that the JSON report writes them in its own form instead of serializing them
+    private transient Finding finding;
+    private transient BaselineState baselineState;
 
     IssueImpl(Location location,
               Rule rule,
@@ -75,5 +80,32 @@ public class IssueImpl implements Issue {
 
     public String fileName() {
         return fileName;
+    }
+
+    @Override
+    public Map<String, String> partialFingerprints() {
+        return finding == null ? Map.of() : Map.of(Fingerprints.KEY, finding.fingerprint());
+    }
+
+    /**
+     * Returns whether the issue is new or in the baseline, as written to the {@code baselineState} of the reports.
+     *
+     * @return {@code new} or {@code unchanged}, or null when the scan uses no baseline
+     * @since 0.15.0
+     */
+    public String baselineState() {
+        return baselineState == null ? null : baselineState.value();
+    }
+
+    Finding finding() {
+        return finding;
+    }
+
+    void setFinding(Finding finding) {
+        this.finding = finding;
+    }
+
+    void setBaselineState(BaselineState baselineState) {
+        this.baselineState = baselineState;
     }
 }

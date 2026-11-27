@@ -9,6 +9,7 @@
 - [Configuration for Suppressions](#configuration-for-suppressions)
 - [Configuration for the Gate](#configuration-for-the-gate)
 - [Configuration for Test Sources](#configuration-for-test-sources)
+- [Configuration for the Baseline](#configuration-for-the-baseline)
 - [Configuration for Workspaces](#configuration-for-workspaces)
 - [References](#references)
 
@@ -167,6 +168,52 @@ excludeTests = true
 - `excludeTests` - Leave the test sources out of the scan. Defaults to `false`. Same as `--exclude-tests=<true|false>`.
 
 When the test sources are excluded, they are not analyzed by the core rules, the issues that static code analyzer plugins report in them are dropped, their `@scan:Suppress` annotations are not applied or reported as unmatched, and the HTML report does not list them. Test sources are still compiled, so a compilation error in a test still fails the scan. The setting must be a TOML boolean, and the table accepts no other keys. The command-line option overrides the `Scan.toml` setting either way for a single run: `--exclude-tests` (or `--exclude-tests=true`) leaves the test sources out, and `--exclude-tests=false` scans them even when `Scan.toml` sets `excludeTests = true`. A single Ballerina file has no test sources, so the option has no effect there.
+
+# Configuration for the Baseline
+
+A baseline records the issues a team has accepted, so that a scan reports and gates only the issues that are not in it. Users can set the baseline file by defining the `[baseline]` table in a `Scan.toml` file:
+
+```toml
+[baseline]
+path = "scan-baseline.json"
+```
+
+- `path` - The baseline file, relative to the folder of the `Scan.toml` file. It must be a local path; it may not exist until `--create-baseline` creates it. `--baseline-path=<path>` replaces it for one run, with a warning when the two differ.
+
+A baseline is used only when `path` or `--baseline-path` names it; a file that appears in the repository is never picked up on its own. Every issue carries a fingerprint, `ballerinaScanHash/v1`, in the `partialFingerprints` of the SARIF and JSON reports. It is a hash of the rule ID, the package, the file path relative to the package root and the tokens of the first flagged line, so it does not change when lines are added above the issue, the line is re-indented or a comment is added to it, but it does change when the code on the flagged line, the file or the package is changed or renamed. Identical issues in one file are numbered in source order, such as `...:1` and `...:2`.
+
+| Command | Reads the baseline | Writes the baseline | The gate counts |
+|---|---|---|---|
+| `bal scan` | Yes | No | New issues |
+| `bal scan --create-baseline` | Only to keep the entries outside the scan | Yes, replaces the entries the scan covers | Never trips |
+| `bal scan --prune-baseline` | Yes | Yes, removes the entries the scan covers that match no issue | New issues |
+| `bal scan --ignore-baseline` | No | No | Every issue |
+
+- **Matching.** Issues are matched by hash and count: when the baseline has `k` entries with a hash, the first `k` unsuppressed issues with it in source order are in the baseline, and the rest are new. A suppressed issue is never in the baseline. The console prints only the new issues, and the summary counts the others, such as `3 new issue(s), 120 in baseline, 2 suppressed`. The reports keep every issue, each with a `baselineState` of `new` or `unchanged`.
+- **Scope.** A scan sees only the entries of the packages it scans, the rules it selects and the files it analyzes, so `--create-baseline --include-rules=ballerina:13` accepts the issues of that rule without dropping the entries of the others, and `--exclude-tests` leaves the entries of the test sources as they are.
+- **Stale entries.** An entry that matches no issue, for example because the issue was fixed, is reported as a warning that suggests `--prune-baseline`. A warning never changes the exit code.
+- **Errors.** A configured file that does not exist, or that is not a valid baseline, stops the scan with exit code `1`, with each error at its line and column. A `--baseline-path` file that does not exist, `--create-baseline` or `--prune-baseline` without a baseline file, and any two of `--create-baseline`, `--prune-baseline` and `--ignore-baseline` are usage errors with exit code `2`. `--ignore-baseline` never reads the file, and a scan triggered by a platform ignores the baseline.
+
+The file is JSON, written in a stable order with no line numbers or dates, so that it changes only when issues are accepted or removed. The snippet of each entry is for review only: the content of every string, template and numeric literal on it is replaced by `***`, so that a hardcoded secret is not committed with the baseline.
+
+```json
+{
+  "version": 1,
+  "fingerprint": "ballerinaScanHash/v1",
+  "balScanVersion": "0.15.0",
+  "issues": [
+    {
+      "fingerprint": "9f2c51d0a4b87e13c6f0e2d9b1a47c58:1",
+      "ruleId": "ballerina:13",
+      "package": "myorg/orders",
+      "filePath": "modules/db/client.bal",
+      "snippet": "    string password = \"***\";"
+    }
+  ]
+}
+```
+
+In a workspace, a package uses the baseline of the `Scan.toml` it uses. Every entry names its package, so the packages can share one file, and each package is gated on its own new issues. `--create-baseline` and `--prune-baseline` write each file once, after every package that uses it is scanned, and leave out, with a warning, a package that has no baseline.
 
 # Configuration for Workspaces
 

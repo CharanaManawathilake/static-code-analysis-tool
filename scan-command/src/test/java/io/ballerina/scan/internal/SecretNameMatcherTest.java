@@ -18,8 +18,6 @@
 
 package io.ballerina.scan.internal;
 
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -28,8 +26,7 @@ import org.testng.annotations.Test;
  * @since 0.13.0
  */
 public class SecretNameMatcherTest {
-    @DataProvider
-    Object[][] secretNames() {
+    private static Object[][] secretNames() {
         return new Object[][]{
                 {"password"}, {"passwd"}, {"pwd"}, {"passphrase"}, {"passcode"}, {"secret"}, {"token"},
                 {"auth"}, {"creds"}, {"bearer"}, {"PASSWORD"}, {"dbPassword"}, {"dbpassword"},
@@ -48,8 +45,7 @@ public class SecretNameMatcherTest {
         };
     }
 
-    @DataProvider
-    Object[][] nonSecretNames() {
+    private static Object[][] nonSecretNames() {
         return new Object[][]{
                 {"username"}, {"author"}, {"authority"}, {"authenticate"}, {"tokenizer"}, {"secretary"},
                 {"undersecretary"}, {"hashedPassword"}, {"hashed_api_key"},
@@ -67,18 +63,17 @@ public class SecretNameMatcherTest {
         };
     }
 
-    @Test(dataProvider = "secretNames")
-    void testSecretName(String name) {
-        Assert.assertTrue(SecretNameMatcher.isSecretName(name), name);
+    @Test
+    void testSecretName() {
+        CaseTables.assertCases(secretNames(), SecretNameMatcher::isSecretName, true);
     }
 
-    @Test(dataProvider = "nonSecretNames")
-    void testNonSecretName(String name) {
-        Assert.assertFalse(SecretNameMatcher.isSecretName(name), name);
+    @Test
+    void testNonSecretName() {
+        CaseTables.assertCases(nonSecretNames(), SecretNameMatcher::isSecretName, false);
     }
 
-    @DataProvider
-    Object[][] secretKinds() {
+    private static Object[][] secretKinds() {
         return new Object[][]{
                 {"password", SecretNameMatcher.Kind.PASSWORD}, {"dbPassword", SecretNameMatcher.Kind.PASSWORD},
                 {"dbpwd", SecretNameMatcher.Kind.PASSWORD}, {"passCodes", SecretNameMatcher.Kind.PASSWORD},
@@ -105,8 +100,8 @@ public class SecretNameMatcherTest {
         };
     }
 
-    @Test(dataProvider = "secretKinds")
-    void testSecretKind(String name, SecretNameMatcher.Kind kind) {
-        Assert.assertEquals(SecretNameMatcher.kind(name), kind, name);
+    @Test
+    void testSecretKind() {
+        CaseTables.assertCases(secretKinds(), SecretNameMatcher::kind);
     }
 }

@@ -18,8 +18,6 @@
 
 package io.ballerina.scan.internal;
 
-import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -28,8 +26,7 @@ import org.testng.annotations.Test;
  * @since 0.13.0
  */
 public class SecretValueFilterTest {
-    @DataProvider
-    Object[][] placeholderValues() {
+    private static Object[][] placeholderValues() {
         return new Object[][]{
                 {""}, {"   "}, {"${DB_PASSWORD}"}, {"{{api_key}}"}, {"<token>"}, {"<your password>"},
                 {"$DB_PASSWORD"}, {"%DB_PASSWORD%"}, {"changeme"}, {"CHANGEIT"}, {"change_me"}, {"dummy"},
@@ -39,8 +36,7 @@ public class SecretValueFilterTest {
         };
     }
 
-    @DataProvider
-    Object[][] secretValues() {
+    private static Object[][] secretValues() {
         return new Object[][]{
                 {"s3cr3t-value"}, {"password"}, {"admin123"}, {"Fetch"}, {"access_token"}, {"yours"},
                 {"$2a$10$abcdefghijklmnopqrstuv"}, {"a<b>c"}, {"xxxxxxxy"}, {"$ecureP4ss"}, {"$k9Zq7LmP2x"},
@@ -48,8 +44,7 @@ public class SecretValueFilterTest {
         };
     }
 
-    @DataProvider
-    Object[][] generatedValues() {
+    private static Object[][] generatedValues() {
         return new Object[][]{
                 {"PJz0UhTJMrHOo68QQNpvnqAY_3Aa"}, {"Basic dXNlcjpwYXNzd29yZA=="}, {"sk_live_51H8xKqLz9"},
                 {"ghp_a1B2c3D4e5F6g7H8"}, {"s3cr3t-value"}, {"9f8a7b6c5d4e"}, {"a8f5f167f44f4964"}, {"AKIA1234"},
@@ -58,8 +53,7 @@ public class SecretValueFilterTest {
         };
     }
 
-    @DataProvider
-    Object[][] notGeneratedValues() {
+    private static Object[][] notGeneratedValues() {
         return new Object[][]{
                 {"true"}, {"false"}, {"Basic"}, {"Basic "}, {"Bearer"}, {"No Proxy"}, {"Authorization"},
                 {"access_token"}, {"admin"}, {"aaaaaaaa1"}, {"abc123"}, {"12345678"}, {"abcdefg1"}, {"1234567890"},
@@ -69,23 +63,23 @@ public class SecretValueFilterTest {
         };
     }
 
-    @Test(dataProvider = "placeholderValues")
-    void testPlaceholderValue(String value) {
-        Assert.assertTrue(SecretValueFilter.isPlaceholder(value), value);
+    @Test
+    void testPlaceholderValue() {
+        CaseTables.assertCases(placeholderValues(), SecretValueFilter::isPlaceholder, true);
     }
 
-    @Test(dataProvider = "secretValues")
-    void testSecretValue(String value) {
-        Assert.assertFalse(SecretValueFilter.isPlaceholder(value), value);
+    @Test
+    void testSecretValue() {
+        CaseTables.assertCases(secretValues(), SecretValueFilter::isPlaceholder, false);
     }
 
-    @Test(dataProvider = "generatedValues")
-    void testGeneratedValue(String value) {
-        Assert.assertTrue(SecretValueFilter.looksGenerated(value), value);
+    @Test
+    void testGeneratedValue() {
+        CaseTables.assertCases(generatedValues(), SecretValueFilter::looksGenerated, true);
     }
 
-    @Test(dataProvider = "notGeneratedValues")
-    void testNotGeneratedValue(String value) {
-        Assert.assertFalse(SecretValueFilter.looksGenerated(value), value);
+    @Test
+    void testNotGeneratedValue() {
+        CaseTables.assertCases(notGeneratedValues(), SecretValueFilter::looksGenerated, false);
     }
 }

@@ -1,5 +1,6 @@
 import { Box, Chip, Tooltip, Typography, alpha } from "@mui/material";
 import {
+    BASELINED,
     RULE_KINDS,
     SEVERITIES,
     SUPPRESSED,
@@ -12,6 +13,7 @@ import {
     getRuleKind,
     getRuleName,
     getSeverity,
+    isBaselined,
     isSuppressed,
 } from "../issueMeta";
 import RichText from "./RichText";
@@ -71,6 +73,23 @@ export const SuppressedChip = ({ issue }) => {
                 icon={<SUPPRESSED.Icon style={{ color: SUPPRESSED.color }} />}
                 label={SUPPRESSED.label}
                 sx={{ ...chipBase, bgcolor: alpha(SUPPRESSED.color, 0.14), color: "text.primary" }}
+            />
+        </Tooltip>
+    );
+};
+
+// Marks an issue accepted in the baseline file, which the gate does not count.
+export const BaselinedChip = ({ issue }) => {
+    if (!isBaselined(issue)) {
+        return null;
+    }
+    return (
+        <Tooltip title="Accepted in the baseline file; not counted by the gate">
+            <Chip
+                size="small"
+                icon={<BASELINED.Icon style={{ color: BASELINED.color }} />}
+                label={BASELINED.label}
+                sx={{ ...chipBase, bgcolor: alpha(BASELINED.color, 0.14), color: "text.primary" }}
             />
         </Tooltip>
     );
@@ -165,6 +184,7 @@ export const IssueSummaryCard = ({ issue }) => {
                 <KindChip issue={issue} />
                 {getSeverity(issue) && <SeverityChip issue={issue} />}
                 <SuppressedChip issue={issue} />
+                <BaselinedChip issue={issue} />
             </Box>
             {justification &&
                 <Typography variant="caption" color="text.secondary" component="div" sx={{ marginTop: "6px" }}>

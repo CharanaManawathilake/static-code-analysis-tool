@@ -80,6 +80,22 @@ public enum DiagnosticCode {
     UNKNOWN_CONFIG_ENTRY("STATIC_ANALYSIS_ERROR_054", "unknown.config.entry"),
     INVALID_PLATFORM_LIST("STATIC_ANALYSIS_ERROR_055", "invalid.platform.list"),
     PLATFORM_PATH_MISSING("STATIC_ANALYSIS_ERROR_056", "platform.path.missing"),
+    BASELINE_OPTION_CONFLICT("STATIC_ANALYSIS_ERROR_057", "baseline.option.conflict"),
+    BASELINE_PATH_REQUIRED("STATIC_ANALYSIS_ERROR_058", "baseline.path.required"),
+    BASELINE_NOT_FOUND("STATIC_ANALYSIS_ERROR_059", "baseline.not.found"),
+    BASELINE_OPTION_NOT_FOUND("STATIC_ANALYSIS_ERROR_060", "baseline.option.not.found"),
+    BASELINE_IS_DIRECTORY("STATIC_ANALYSIS_ERROR_061", "baseline.is.directory"),
+    BASELINE_READ_FAILED("STATIC_ANALYSIS_ERROR_062", "baseline.read.failed"),
+    BASELINE_WRITE_FAILED("STATIC_ANALYSIS_ERROR_063", "baseline.write.failed"),
+    BASELINE_INVALID_JSON("STATIC_ANALYSIS_ERROR_064", "baseline.invalid.json"),
+    BASELINE_NOT_AN_OBJECT("STATIC_ANALYSIS_ERROR_065", "baseline.not.an.object"),
+    BASELINE_UNKNOWN_FIELD("STATIC_ANALYSIS_ERROR_066", "baseline.unknown.field"),
+    BASELINE_MISSING_FIELD("STATIC_ANALYSIS_ERROR_067", "baseline.missing.field"),
+    BASELINE_DUPLICATE_FIELD("STATIC_ANALYSIS_ERROR_068", "baseline.duplicate.field"),
+    BASELINE_INVALID_VALUE("STATIC_ANALYSIS_ERROR_069", "baseline.invalid.value"),
+    BASELINE_UNSUPPORTED_VERSION("STATIC_ANALYSIS_ERROR_070", "baseline.unsupported.version"),
+    BASELINE_UNSUPPORTED_FINGERPRINT("STATIC_ANALYSIS_ERROR_071", "baseline.unsupported.fingerprint"),
+    BASELINE_DUPLICATE_ENTRY("STATIC_ANALYSIS_ERROR_072", "baseline.duplicate.entry"),
     REPORT_NOT_SUPPORTED("STATIC_ANALYSIS_WARNING_001", "report.not.supported"),
     SCAN_REPORT_NOT_SUPPORTED("STATIC_ANALYSIS_WARNING_002", "scan.report.not.supported"),
     UNMATCHED_SUPPRESSION("STATIC_ANALYSIS_WARNING_003", "unmatched.suppression"),
@@ -95,7 +111,9 @@ public enum DiagnosticCode {
     WORKSPACE_RULE_NOT_AVAILABLE("STATIC_ANALYSIS_WARNING_014", "workspace.rule.not.available"),
     PLATFORM_NOT_DECLARED("STATIC_ANALYSIS_WARNING_015", "platform.not.declared"),
     SCAN_FILE_OVERRIDDEN("STATIC_ANALYSIS_WARNING_016", "scan.file.overridden"),
-    PLATFORM_PATH_MISSING_SKIPPED("STATIC_ANALYSIS_WARNING_017", "platform.path.missing.skipped");
+    PLATFORM_PATH_MISSING_SKIPPED("STATIC_ANALYSIS_WARNING_017", "platform.path.missing.skipped"),
+    BASELINE_STALE_ENTRIES("STATIC_ANALYSIS_WARNING_018", "baseline.stale.entries"),
+    BASELINE_NOT_SET_SKIPPED("STATIC_ANALYSIS_WARNING_019", "baseline.not.set.skipped");
 
     private final String diagnosticId;
     private final String messageKey;

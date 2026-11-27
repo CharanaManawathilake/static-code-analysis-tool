@@ -4,7 +4,7 @@ import {
     Card,
     Typography
 } from "@mui/material"
-import { RULE_KINDS, RULE_KIND_ORDER, SUPPRESSED } from "../issueMeta"
+import { BASELINED, RULE_KINDS, RULE_KIND_ORDER, SUPPRESSED } from "../issueMeta"
 
 const StatCard = ({ value, label, color, Icon }) => (
     <Card elevation={0} sx={{
@@ -38,10 +38,12 @@ const StatCard = ({ value, label, color, Icon }) => (
 
 function InfoCards({ statistics }) {
     const showSuppressed = statistics.suppressed > 0
+    const showBaselined = statistics.baselined > 0
+    const columns = 4 + (showSuppressed ? 1 : 0) + (showBaselined ? 1 : 0)
     return (
         <Box sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: `repeat(${showSuppressed ? 5 : 4}, 1fr)` },
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: `repeat(${columns}, 1fr)` },
             gap: "1rem",
         }}>
             <StatCard
@@ -59,6 +61,14 @@ function InfoCards({ statistics }) {
                     Icon={RULE_KINDS[kind].Icon}
                 />
             ))}
+            {showBaselined &&
+                <StatCard
+                    value={statistics.baselined}
+                    label={BASELINED.label}
+                    color={BASELINED.color}
+                    Icon={BASELINED.Icon}
+                />
+            }
             {showSuppressed &&
                 <StatCard
                     value={statistics.suppressed}

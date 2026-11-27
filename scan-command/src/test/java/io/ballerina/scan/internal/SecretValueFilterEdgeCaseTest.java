@@ -19,7 +19,6 @@
 package io.ballerina.scan.internal;
 
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -28,8 +27,7 @@ import org.testng.annotations.Test;
  * @since 0.13.0
  */
 public class SecretValueFilterEdgeCaseTest {
-    @DataProvider
-    Object[][] placeholderValues() {
+    private static Object[][] placeholderValues() {
         return new Object[][]{
                 {"\t\n "}, {"  changeme  "}, {"ChangeMe"}, {"CHANGE-ME"}, {"Change_Me"}, {"ChangeIt"}, {"TBD"},
                 {"Todo"}, {"Sample"}, {"EXAMPLE"}, {"Dummy"}, {"Placeholder"}, {"REDACTED"},
@@ -44,8 +42,7 @@ public class SecretValueFilterEdgeCaseTest {
         };
     }
 
-    @DataProvider
-    Object[][] secretValues() {
+    private static Object[][] secretValues() {
         return new Object[][]{
                 {"$ecret123"}, {"$Password1"}, {"$DB_PASSWORD$"}, {"$1"}, {"pa$$word"}, {"P@$$w0rd!"},
                 {"<abc"}, {"abc>"}, {"<a<b>"}, {"<<x>>"}, {"<>"},
@@ -59,18 +56,17 @@ public class SecretValueFilterEdgeCaseTest {
         };
     }
 
-    @Test(dataProvider = "placeholderValues")
-    void testPlaceholderValue(String value) {
-        Assert.assertTrue(SecretValueFilter.isPlaceholder(value), value);
+    @Test
+    void testPlaceholderValue() {
+        CaseTables.assertCases(placeholderValues(), SecretValueFilter::isPlaceholder, true);
     }
 
-    @Test(dataProvider = "secretValues")
-    void testSecretValue(String value) {
-        Assert.assertFalse(SecretValueFilter.isPlaceholder(value), value);
+    @Test
+    void testSecretValue() {
+        CaseTables.assertCases(secretValues(), SecretValueFilter::isPlaceholder, false);
     }
 
-    @DataProvider
-    Object[][] literalValues() {
+    private static Object[][] literalValues() {
         return new Object[][]{
                 {"\"plain\"", "plain"}, {"\"\\tchangeme\"", "\tchangeme"}, {"\"a\\\"b\"", "a\"b"},
                 {"\"back\\\\slash\"", "back\\slash"}, {"\"\\u{63}hangeme\"", "changeme"}, {"\"\"", ""},
@@ -78,9 +74,9 @@ public class SecretValueFilterEdgeCaseTest {
         };
     }
 
-    @Test(dataProvider = "literalValues")
-    void testLiteralValue(String literalText, String value) {
-        Assert.assertEquals(SecretValueFilter.literalValue(literalText), value);
+    @Test
+    void testLiteralValue() {
+        CaseTables.assertCases(literalValues(), SecretValueFilter::literalValue);
     }
 
     @Test

@@ -80,6 +80,32 @@ OPTIONS
                 the exit code. It is checked last, after the platforms. Reports always hold every
                 issue. By default no gate is set.
 
+        --create-baseline
+                Record every current unsuppressed issue in the baseline file, so that later scans
+                report and gate only new issues. The file is set by 'path' in the [baseline] table
+                of Scan.toml, or by --baseline-path, and is created if it does not exist. Only the
+                entries of the packages and rules the scan covers are replaced. Never fails the
+                gate.
+
+        --prune-baseline
+                Remove the baseline entries that match no issue, without adding any. Only the
+                entries of the packages and rules the scan covers are removed. New issues are
+                still reported and gated.
+
+        --ignore-baseline
+                Disregard the baseline and report every issue. The baseline file is not read.
+
+        --baseline-path=<path>
+                Use this baseline file instead of 'path' in the [baseline] table of Scan.toml. A
+                relative path is resolved against the current directory.
+
+                With a baseline, each issue is matched against it by its fingerprint, which does
+                not change when lines are added above the issue or the line is re-indented. Only
+                the new issues are printed and counted by the gate; the reports hold every issue
+                with its baselineState. --create-baseline, --prune-baseline and --ignore-baseline
+                cannot be used together. The baseline is ignored for a scan triggered by a
+                platform.
+
 EXAMPLES
         Run analysis against all Ballerina documents in the current package, print results to the
         console, and save results in JSON file format in the target directory.
@@ -139,3 +165,15 @@ EXAMPLES
 
         Run analysis with the test sources that Scan.toml leaves out.
                 $ bal scan --exclude-tests=false
+
+        Accept the current issues by recording them in the baseline set in Scan.toml.
+                $ bal scan --create-baseline
+
+        Remove the baseline entries whose issues are fixed.
+                $ bal scan --prune-baseline
+
+        Run analysis reporting every issue, including those in the baseline.
+                $ bal scan --ignore-baseline
+
+        Create a baseline in a file that Scan.toml does not set.
+                $ bal scan --create-baseline --baseline-path=scan-baseline.json

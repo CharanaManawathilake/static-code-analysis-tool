@@ -19,7 +19,10 @@
     },
     "source": "BUILT_IN",
     "fileName": "main.bal",
-    "filePath": "<ABS_SOURCE_ROOT>\\main.bal"
+    "filePath": "<ABS_SOURCE_ROOT>\\main.bal",
+    "partialFingerprints": {
+      "ballerinaScanHash/v1": "1e2362cbd33112c55ff953aa474c3c6e:1"
+    }
   },
   {
     "location": {
@@ -41,7 +44,10 @@
     },
     "source": "EXTERNAL",
     "fileName": "main.bal",
-    "filePath": "<ABS_SOURCE_ROOT>\\main.bal"
+    "filePath": "<ABS_SOURCE_ROOT>\\main.bal",
+    "partialFingerprints": {
+      "ballerinaScanHash/v1": "5716c565716469fbd163c72f5356b68a:1"
+    }
   },
   {
     "location": {
@@ -63,6 +69,9 @@
     },
     "source": "BUILT_IN",
     "fileName": "main.bal",
-    "filePath": "<ABS_SOURCE_ROOT>\\main.bal"
+    "filePath": "<ABS_SOURCE_ROOT>\\main.bal",
+    "partialFingerprints": {
+      "ballerinaScanHash/v1": "b6f6e2b13ee2a692b7b95aae1af52698:1"
+    }
   }
 ]

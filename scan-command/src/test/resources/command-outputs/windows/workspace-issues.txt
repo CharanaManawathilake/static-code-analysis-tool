@@ -39,7 +39,10 @@
     },
     "source": "BUILT_IN",
     "fileName": "bal_project_with_analyzer_configurations/main.bal",
-    "filePath": "<ABS_SOURCE_ROOT>\\bal-project-with-analyzer-configurations\\main.bal"
+    "filePath": "<ABS_SOURCE_ROOT>\\bal-project-with-analyzer-configurations\\main.bal",
+    "partialFingerprints": {
+      "ballerinaScanHash/v1": "abe3e131a18957620e2937b42b1d2079:1"
+    }
   },
   {
     "location": {
@@ -81,6 +84,9 @@
     },
     "source": "BUILT_IN",
     "fileName": "bal_project_with_include_rule_configurations/main.bal",
-    "filePath": "<ABS_SOURCE_ROOT>\\bal-project-with-include-rule-configurations\\main.bal"
+    "filePath": "<ABS_SOURCE_ROOT>\\bal-project-with-include-rule-configurations\\main.bal",
+    "partialFingerprints": {
+      "ballerinaScanHash/v1": "c5a7e703bc4e166eeabeadfdf9836d1c:1"
+    }
   }
 ]

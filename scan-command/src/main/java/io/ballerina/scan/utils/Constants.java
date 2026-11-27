@@ -64,6 +64,10 @@ public class Constants {
     static final String SCAN_REPORT_ISSUE_MESSAGE = "message";
     static final String SCAN_REPORT_ISSUE_TEXT_RANGE = "textRange";
     static final String SCAN_REPORT_ISSUE_SUPPRESSION = "suppression";
+    static final String SCAN_REPORT_ISSUE_FINGERPRINT = "fingerprint";
+    static final String PARTIAL_FINGERPRINTS = "partialFingerprints";
+    static final String BASELINE_STATE = "baselineState";
+    static final String BASELINE_STATE_NEW = "new";
     static final String SCAN_REPORT_SUPPRESSION_RULES = "rules";
     static final String SCAN_REPORT_ISSUE_TEXT_RANGE_START_LINE = "startLine";
     static final String SCAN_REPORT_ISSUE_TEXT_RANGE_START_LINE_OFFSET = "startLineOffset";
@@ -96,6 +100,8 @@ public class Constants {
     static final String GATE_FAIL_ON_COUNT = "failOnCount";
     static final String ANALYSIS_TABLE = "analysis";
     static final String ANALYSIS_EXCLUDE_TESTS = "excludeTests";
+    static final String BASELINE_TABLE = "baseline";
+    static final String BASELINE_PATH = "path";
     static final String PATH_ARGUMENT_SUFFIX = "Path";
     static final String INCLUDE_KEY = "include";
     static final String EXCLUDE_KEY = "exclude";

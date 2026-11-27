@@ -33,7 +33,7 @@ import {
     alpha
 } from '@mui/material';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { CweChips, KindChip, OwaspChips, SeverityChip, SuppressedChip } from './IssueBadges';
+import { BaselinedChip, CweChips, KindChip, OwaspChips, SeverityChip, SuppressedChip } from './IssueBadges';
 import RichText from './RichText';
 import { ClearFiltersButton, IssueFilterFields, KindFilterChips, SearchField, StatusFilter } from './IssueFilters';
 import {
@@ -41,6 +41,7 @@ import {
     EMPTY_FILTERS,
     RULE_KINDS,
     RULE_KIND_ORDER,
+    BASELINED,
     SEVERITIES,
     SUPPRESSED,
     changeStatus,
@@ -48,6 +49,7 @@ import {
     cweLabel,
     formatLocation,
     getCweList,
+    getFingerprint,
     getIssueColor,
     getJustification,
     getLineRange,
@@ -57,6 +59,8 @@ import {
     getSeverity,
     getSeverityRank,
     getSuppressedRules,
+    isActive,
+    isBaselined,
     isSuppressed,
     matchesFilters,
     matchesStatus
@@ -111,10 +115,11 @@ const COLUMNS = [
     {
         id: "name", label: "Name", sortField: "name",
         cellSx: { fontWeight: 600, minWidth: 200 },
-        render: (issue) => isSuppressed(issue)
+        render: (issue) => !isActive(issue)
             ? <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.5rem" }}>
                 {getRuleName(issue)}
                 <SuppressedChip issue={issue} />
+                <BaselinedChip issue={issue} />
             </Box>
             : getRuleName(issue),
         csv: (issue) => getRuleName(issue),
@@ -149,18 +154,26 @@ const COLUMNS = [
     },
 ];
 
+const issueStatusLabel = (issue) => {
+    if (isSuppressed(issue)) {
+        return SUPPRESSED.label;
+    }
+    return isBaselined(issue) ? BASELINED.label : "Active";
+};
+
 const csvEscape = (value) => {
     const text = String(value ?? "");
     return /[",\n\r]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 };
 
 const downloadCsv = (issues, fileName) => {
-    const header = [...COLUMNS.map(({ label }) => label), "Description", "Status", "Justification"];
+    const header = [...COLUMNS.map(({ label }) => label), "Description", "Status", "Justification", "Fingerprint"];
     const rows = issues.map(({ issue }) => [
         ...COLUMNS.map(({ csv }) => csv(issue)),
         issue.details ?? issue.message,
-        isSuppressed(issue) ? SUPPRESSED.label : "Active",
+        issueStatusLabel(issue),
         getJustification(issue) ?? "",
+        getFingerprint(issue) ?? "",
     ]);
     const content = [header, ...rows].map((row) => row.map(csvEscape).join(",")).join("\r\n");
     const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
@@ -233,7 +246,7 @@ function SingleFileTable({ issues, fileName, selectedIssue, onSelectIssue, onSho
             const issue = issues?.[target];
             if (issue && !matchesFilters(issue, filters)) {
                 // A suppressed issue stays hidden under the default status, so reveal it among all issues.
-                onFiltersChange({ ...EMPTY_FILTERS, status: isSuppressed(issue) ? "all" : DEFAULT_STATUS });
+                onFiltersChange({ ...EMPTY_FILTERS, status: isActive(issue) ? DEFAULT_STATUS : "all" });
             } else {
                 // Not hidden by a filter, so there's nothing to reveal (e.g. a stale index in the URL).
                 pendingReveal.current = null;
@@ -579,6 +592,15 @@ const IssueDetails = ({ issue, onShowInCode }) => {
                 <Box sx={{ gridColumn: "1 / -1" }}>
                     <DetailField label="OWASP Top 10"><OwaspChips issue={issue} showTitles /></DetailField>
                 </Box>
+                {getFingerprint(issue) &&
+                    <Box sx={{ gridColumn: "1 / -1" }}>
+                        <DetailField label="Fingerprint">
+                            <Box component="span" sx={{ fontFamily: "consolas, monospace", wordBreak: "break-all" }}>
+                                {getFingerprint(issue)}
+                            </Box>
+                        </DetailField>
+                    </Box>
+                }
             </Box>
         </Box>
     );

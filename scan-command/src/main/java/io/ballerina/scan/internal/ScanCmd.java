@@ -68,6 +68,7 @@ import java.nio.file.Paths;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -110,6 +111,10 @@ public class ScanCmd implements BLauncherCmd {
     private static final String FAIL_ON_SEVERITY_OPTION = "--fail-on-severity";
     private static final String FAIL_ON_COUNT_OPTION = "--fail-on-count";
     private static final String EXCLUDE_TESTS_OPTION = "--exclude-tests";
+    private static final String CREATE_BASELINE_OPTION = "--create-baseline";
+    private static final String PRUNE_BASELINE_OPTION = "--prune-baseline";
+    private static final String IGNORE_BASELINE_OPTION = "--ignore-baseline";
+    private static final String BASELINE_PATH_OPTION = "--baseline-path";
     private static final String LIST_RULES_HINT = "  Run 'bal scan --list-rules' to see the available rules.";
 
     private final PrintStream outputStream;
@@ -119,6 +124,8 @@ public class ScanCmd implements BLauncherCmd {
     private int exitCode;
     // Rule tests run through the test runner inspect the issues, so a gate in their fixtures must not fail them
     private boolean gateEnabled = true;
+    // Rule tests inspect every issue, so a baseline in their fixtures must not hide any
+    private boolean baselineEnabled = true;
 
     // Collects every positional argument, so that extra ones exit as a usage error instead of a launcher error
     @CommandLine.Parameters
@@ -191,6 +198,25 @@ public class ScanCmd implements BLauncherCmd {
     private String excludeTestsOption;
     private Boolean excludeTests;
 
+    @CommandLine.Option(names = CREATE_BASELINE_OPTION,
+            description = "Record every current unsuppressed issue in the baseline file")
+    private boolean createBaseline;
+
+    @CommandLine.Option(names = PRUNE_BASELINE_OPTION,
+            description = "Remove the baseline entries that match no issue")
+    private boolean pruneBaseline;
+
+    @CommandLine.Option(names = IGNORE_BASELINE_OPTION,
+            description = "Disregard the baseline and report every issue")
+    private boolean ignoreBaseline;
+
+    // Validated when the command runs, so that an invalid value exits as a usage error
+    @CommandLine.Option(names = BASELINE_PATH_OPTION,
+            description = "Use this baseline file instead of [baseline] path in Scan.toml")
+    private String baselinePathOption;
+    private Path baselineOptionPath;
+    private BaselineMode baselineMode = BaselineMode.CHECK;
+
     private final List<Rule> allRules = new ArrayList<>();
     private final Set<String> allRuleIds = new HashSet<>();
     private final List<Issue> allIssues;
@@ -221,6 +247,11 @@ public class ScanCmd implements BLauncherCmd {
     private final List<String> pendingWarnings = new ArrayList<>();
     // The platforms named in --platforms that a workspace package declares without a path
     private final Set<String> pathlessWorkspacePlatforms = new LinkedHashSet<>();
+    // Each baseline file is read once, keyed by its absolute path, as the packages of a workspace can share one
+    private final Map<Path, BaselineFile> baselineFiles = new LinkedHashMap<>();
+    // The workspace packages that --create-baseline or --prune-baseline leave out, as they set no baseline
+    private final List<String> packagesWithoutBaseline = new ArrayList<>();
+    private final List<BaselineReport> baselineReports = new ArrayList<>();
 
     public ScanCmd() {
         this(System.out, System.err);
@@ -277,6 +308,7 @@ public class ScanCmd implements BLauncherCmd {
         this.platforms.addAll(platforms);
         this.allIssues = new ArrayList<>();
         this.gateEnabled = false;
+        this.baselineEnabled = false;
         // Test runners run the scan in their own JVM, so a failure is thrown instead of exiting it
         this.exitHandler = failure -> {
             throw new ScanToolException(failure.getMessage(), failure.details());
@@ -480,6 +512,65 @@ public class ScanCmd implements BLauncherCmd {
                     DiagnosticLog.error(DiagnosticCode.INVALID_OPTION_VALUE, failOnCount, FAIL_ON_COUNT_OPTION,
                             ScanUtils.GATE_COUNT_VALUES)));
         }
+        resolveBaselineOptions();
+    }
+
+    /**
+     * Validates the baseline options: at most one of them selects a mode, and a file given to --baseline-path exists
+     * unless the baseline is being created.
+     */
+    private void resolveBaselineOptions() {
+        List<String> modes = new ArrayList<>();
+        if (createBaseline) {
+            modes.add(CREATE_BASELINE_OPTION);
+            baselineMode = BaselineMode.CREATE;
+        }
+        if (pruneBaseline) {
+            modes.add(PRUNE_BASELINE_OPTION);
+            baselineMode = BaselineMode.PRUNE;
+        }
+        if (ignoreBaseline) {
+            modes.add(IGNORE_BASELINE_OPTION);
+            baselineMode = BaselineMode.IGNORE;
+        }
+        if (modes.size() > 1) {
+            throw ScanFailure.usage(DiagnosticLog.error(DiagnosticCode.BASELINE_OPTION_CONFLICT,
+                    joinWith(modes, "and")));
+        }
+        if (baselinePathOption != null) {
+            baselineOptionPath = resolveOptionPath(baselinePathOption).orElseThrow(() -> ScanFailure.usage(
+                    DiagnosticLog.error(DiagnosticCode.INVALID_OPTION_VALUE, baselinePathOption, BASELINE_PATH_OPTION,
+                            "the path of a baseline file")));
+        }
+        // A platform that triggers the scan tracks new issues itself, so the baseline is ignored without a warning
+        if (platformTriggered || !baselineEnabled) {
+            baselineMode = BaselineMode.IGNORE;
+        }
+        if (baselineOptionPath == null || baselineMode == BaselineMode.IGNORE) {
+            return;
+        }
+        if (Files.isDirectory(baselineOptionPath)) {
+            throw ScanFailure.usage(DiagnosticLog.error(DiagnosticCode.BASELINE_IS_DIRECTORY, baselinePathOption));
+        }
+        if (baselineMode != BaselineMode.CREATE && !Files.exists(baselineOptionPath)) {
+            throw ScanFailure.usage(DiagnosticLog.error(DiagnosticCode.BASELINE_OPTION_NOT_FOUND,
+                    baselinePathOption));
+        }
+    }
+
+    /**
+     * Resolves a path given on the command line against the directory the command runs in.
+     */
+    private static Optional<Path> resolveOptionPath(String value) {
+        if (value.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Paths.get(System.getProperty(ProjectConstants.USER_DIR)).resolve(value)
+                    .toAbsolutePath().normalize());
+        } catch (InvalidPathException ex) {
+            return Optional.empty();
+        }
     }
 
     /**
@@ -520,12 +611,14 @@ public class ScanCmd implements BLauncherCmd {
         }
         if (failures.isEmpty()) {
             failOnUndeclaredWorkspacePlatforms();
+            warnPackagesWithoutBaseline(packageScans);
         }
         // The analyzer rules are known only once each package is loaded, so only core rule IDs are checked up front
         addRules(CoreRule.rules());
         failOnUnknownRuleOptions(true);
         // The run fails anyway, so the other packages are not compiled and scanned
         failOnPackageFailures(workspaceProject, failures);
+        loadBaselines(packageScans);
 
         // Each package's analyzers are loaded just before it is scanned and released after it, and its result once it
         // is reported
@@ -552,13 +645,18 @@ public class ScanCmd implements BLauncherCmd {
         failOnPackageFailures(workspaceProject, failures);
         section(Section.COMBINING);
         errorStream.println(COMBINING_RESULTS_LOG + results.size() + (results.size() == 1 ? " package" : " packages"));
+        // Each baseline is written once, after every package that uses it is scanned
+        Deque<PackageResult> matchedResults = new ArrayDeque<>(applyBaselines(List.copyOf(results)));
+        results.clear();
+        boolean usesBaseline = matchedResults.stream().anyMatch(result -> result.baseline() != null);
 
         // A package that cannot report to its platforms does not stop the others from reporting
-        int activeIssueCount = 0;
+        int newIssueCount = 0;
+        int baselinedIssueCount = 0;
         List<String> gateFailures = new ArrayList<>();
         List<PlatformRun> platformRuns = new ArrayList<>();
-        while (!results.isEmpty()) {
-            PackageResult result = results.poll();
+        while (!matchedResults.isEmpty()) {
+            PackageResult result = matchedResults.poll();
             Project packageProject = result.project();
             try {
                 report(result);
@@ -567,16 +665,18 @@ public class ScanCmd implements BLauncherCmd {
             }
             result.platforms().forEach(platform ->
                     platformRuns.add(platformRun(packageProject, platform, result.activeIssues())));
-            activeIssueCount += result.activeIssues().size();
-            // Each package is gated on its own issues; errors win over the gate, so a failure is thrown last
-            result.gate().evaluate(result.activeIssues())
-                    .ifPresent(message -> gateFailures.add(packageError(workspaceProject, packageProject, message)));
+            newIssueCount += result.newIssues().size();
+            baselinedIssueCount += result.baselinedIssueCount();
+            // Each package is gated on its own new issues; errors win over the gate, so a failure is thrown last
+            gate(result).ifPresent(message -> gateFailures.add(packageError(workspaceProject, packageProject,
+                    message)));
         }
         // The packages' issues are printed as one document, so that standard output stays valid JSON
         if (printWorkspaceIssues) {
             printIssues(workspaceConsoleIssues, workspaceProject);
         }
-        printSummary(activeIssueCount, allSuppressions.size());
+        printSummary(newIssueCount, usesBaseline ? baselinedIssueCount : null, allSuppressions.size());
+        printBaselineReports();
         try {
             writeWorkspaceReports(workspaceProject);
         } catch (RuntimeException ex) {
@@ -742,14 +842,19 @@ public class ScanCmd implements BLauncherCmd {
             return;
         }
 
+        loadBaselines(List.of(packageScan));
+
         printRunningScans(project);
-        PackageResult result = scanPackage(packageScan, rules);
+        PackageResult scanResult = scanPackage(packageScan, rules);
         // Nothing is reported until the package meets the suppression requirements
-        if (result.suppressionFailure() != null) {
-            throw result.suppressionFailure();
+        if (scanResult.suppressionFailure() != null) {
+            throw scanResult.suppressionFailure();
         }
+        PackageResult result = applyBaselines(List.of(scanResult)).get(0);
         Optional<Path> resultsPath = report(result);
-        printSummary(result.activeIssues().size(), result.suppressions().size());
+        printSummary(result.newIssues().size(), result.baseline() == null ? null : result.baselinedIssueCount(),
+                result.suppressions().size());
+        printBaselineReports();
         resultsPath.ifPresent(this::printResultsLocation);
         if (resultsPath.isPresent() && scanReport) {
             printScanReportLocation(ScanUtils.generateScanReport(result.issues(), project, targetDir,
@@ -758,9 +863,20 @@ public class ScanCmd implements BLauncherCmd {
         // The results are saved before the platforms run, and a failed platform wins over the gate
         reportToPlatforms(result.platforms().stream()
                 .map(platform -> platformRun(project, platform, result.activeIssues())).toList());
-        result.gate().evaluate(result.activeIssues()).ifPresent(message -> {
+        gate(result).ifPresent(message -> {
             throw ScanFailure.runtime(message);
         });
+    }
+
+    /**
+     * Checks the new issues of a package against its gate. Creating a baseline accepts every issue, so it never
+     * trips the gate.
+     */
+    private Optional<String> gate(PackageResult result) {
+        if (baselineMode == BaselineMode.CREATE) {
+            return Optional.empty();
+        }
+        return result.gate().evaluate(result.newIssues());
     }
 
     /**
@@ -836,7 +952,206 @@ public class ScanCmd implements BLauncherCmd {
                 ignoreSuppressions, requireSuppressionReason, requireSuppressionRuleId);
         RuleSelection ruleSelection = resolveRules(scanTomlFile, scanTomlLabel);
         QualityGate gate = listRules ? QualityGate.OFF : resolveGate(scanTomlFile, scanTomlLabel);
-        return new PackageConfig(analyzedSources, ruleSelection, suppressionOptions, gate);
+        BaselineSource baseline = listRules ? null : resolveBaseline(project, scanTomlFile, scanTomlLabel, root);
+        return new PackageConfig(analyzedSources, ruleSelection, suppressionOptions, gate, baseline);
+    }
+
+    /**
+     * Returns the baseline file of a package: the one given to --baseline-path, or the one set in the Scan.toml file
+     * it uses. A baseline is never discovered, so that a file that appears in the repository does not change what the
+     * gate counts.
+     *
+     * @return the baseline, or null when the package has none or the baseline is ignored
+     */
+    private BaselineSource resolveBaseline(Project project, ScanTomlFile scanTomlFile, String scanTomlLabel,
+                                           Path root) {
+        if (baselineMode == BaselineMode.IGNORE) {
+            return null;
+        }
+        Optional<Path> configuredPath = scanTomlFile.getBaselinePath();
+        if (baselineOptionPath != null) {
+            if (configuredPath.isPresent() && !configuredPath.get().equals(baselineOptionPath)) {
+                warnOnce(DiagnosticLog.warning(DiagnosticCode.SETTING_OVERRIDDEN,
+                        BASELINE_PATH_OPTION + "=" + baselinePathOption, ScanTomlFile.BASELINE_PATH_SETTING + " = "
+                                + scanTomlFile.getWrittenValue(ScanTomlFile.BASELINE_PATH_SETTING).orElse(""),
+                        scanTomlLabel));
+            }
+            return new BaselineSource(baselineOptionPath, baselinePathOption, null);
+        }
+        if (configuredPath.isPresent()) {
+            return new BaselineSource(configuredPath.get(), ScanUtils.displayPath(root, configuredPath.get()),
+                    scanTomlLabel);
+        }
+        if (baselineMode.writes()) {
+            // A workspace package without a baseline is left out, as long as another package has one
+            if (!scanningWorkspace) {
+                throw ScanFailure.usage(DiagnosticLog.error(DiagnosticCode.BASELINE_PATH_REQUIRED,
+                        baselineMode.option()));
+            }
+            packagesWithoutBaseline.add(packageLabel(project.workspaceProject().orElseThrow(), project));
+        }
+        return null;
+    }
+
+    /**
+     * Fails the scan when --create-baseline or --prune-baseline is given for a workspace none of whose packages has a
+     * baseline, and otherwise warns about each package it leaves out.
+     */
+    private void warnPackagesWithoutBaseline(Collection<PackageScan> packageScans) {
+        if (!baselineMode.writes() || packagesWithoutBaseline.isEmpty()) {
+            return;
+        }
+        if (packageScans.stream().allMatch(packageScan -> packageScan.config().baseline() == null)) {
+            throw ScanFailure.usage(DiagnosticLog.error(DiagnosticCode.BASELINE_PATH_REQUIRED,
+                    baselineMode.option()));
+        }
+        packagesWithoutBaseline.forEach(label -> warn(DiagnosticLog.warning(DiagnosticCode.BASELINE_NOT_SET_SKIPPED,
+                label, baselineMode.option())));
+    }
+
+    /**
+     * Reads the baseline of each package, once for each file, so that an error in a file shared by the packages of a
+     * workspace is reported once, before any package is scanned.
+     */
+    private void loadBaselines(Collection<PackageScan> packageScans) {
+        for (PackageScan packageScan : packageScans) {
+            BaselineSource source = packageScan.config().baseline();
+            if (source != null && !baselineFiles.containsKey(source.path())) {
+                baselineFiles.put(source.path(), loadBaseline(source));
+            }
+        }
+    }
+
+    /**
+     * Reads a baseline file. A missing file is created by --create-baseline; otherwise it is an error, so that a typo
+     * in the path does not turn the baseline off.
+     */
+    private BaselineFile loadBaseline(BaselineSource source) {
+        Path path = source.path();
+        String displayPath = source.displayPath();
+        if (Files.isDirectory(path)) {
+            String message = DiagnosticLog.error(DiagnosticCode.BASELINE_IS_DIRECTORY, displayPath);
+            throw source.isOption() ? ScanFailure.usage(message) : ScanFailure.runtime(message);
+        }
+        if (Files.exists(path)) {
+            return BaselineFile.read(path, displayPath);
+        }
+        if (baselineMode == BaselineMode.CREATE) {
+            return BaselineFile.absent(path, displayPath);
+        }
+        if (source.isOption()) {
+            throw ScanFailure.usage(DiagnosticLog.error(DiagnosticCode.BASELINE_OPTION_NOT_FOUND, displayPath));
+        }
+        throw ScanFailure.runtime(DiagnosticLog.error(DiagnosticCode.BASELINE_NOT_FOUND, displayPath,
+                source.scanTomlLabel()));
+    }
+
+    /**
+     * Matches the unsuppressed issues of each package against its baseline and records whether each issue is new.
+     * With --create-baseline or --prune-baseline, each baseline file is then written once, with the entries of every
+     * package that uses it; the entries outside the scope of the scan are kept as they are.
+     *
+     * @param results the scanned packages
+     * @return the packages with their new issues
+     */
+    private List<PackageResult> applyBaselines(List<PackageResult> results) {
+        Map<BaselineFile, List<Integer>> packagesByFile = new LinkedHashMap<>();
+        for (int i = 0; i < results.size(); i++) {
+            PackageBaseline baseline = results.get(i).baseline();
+            if (baseline != null) {
+                packagesByFile.computeIfAbsent(baseline.file(), file -> new ArrayList<>()).add(i);
+            }
+        }
+        List<PackageResult> matchedResults = new ArrayList<>(results);
+        for (Map.Entry<BaselineFile, List<Integer>> packagesOfFile : packagesByFile.entrySet()) {
+            BaselineFile file = packagesOfFile.getKey();
+            List<BaselineMatcher.Scope> scopes = packagesOfFile.getValue().stream()
+                    .map(index -> results.get(index).baseline().scope()).toList();
+            // Keyed by fingerprint, so that an entry is written once even if the file was edited by hand
+            Map<String, BaselineFile.Entry> entriesToWrite = new LinkedHashMap<>();
+            file.entries().stream().filter(entry -> scopes.stream().noneMatch(scope -> scope.contains(entry)))
+                    .forEach(entry -> entriesToWrite.put(entry.fingerprint(), entry));
+            int staleEntryCount = 0;
+            for (int index : packagesOfFile.getValue()) {
+                PackageResult result = results.get(index);
+                BaselineMatcher.Scope scope = result.baseline().scope();
+                BaselineMatcher.Match match = BaselineMatcher.match(result.activeIssues(),
+                        file.entries().stream().filter(scope::contains).toList());
+                Set<Issue> baselined = baselineMode == BaselineMode.CREATE ? fingerprinted(result.activeIssues())
+                        : match.baselined();
+                for (Issue issue : result.issues()) {
+                    if (issue instanceof IssueImpl issueImpl) {
+                        issueImpl.setBaselineState(baselined.contains(issue) ? BaselineState.UNCHANGED
+                                : BaselineState.NEW);
+                    }
+                }
+                List<BaselineFile.Entry> currentEntries = baselineMode == BaselineMode.CREATE
+                        ? baselined.stream().map(issue -> BaselineFile.Entry.of(((IssueImpl) issue).finding()))
+                        .toList()
+                        : match.kept();
+                currentEntries.forEach(entry -> entriesToWrite.put(entry.fingerprint(), entry));
+                staleEntryCount += match.stale().size();
+                matchedResults.set(index, result.withNewIssues(result.activeIssues().stream()
+                        .filter(issue -> !baselined.contains(issue)).toList(), baselined.size()));
+            }
+            updateBaseline(file, List.copyOf(entriesToWrite.values()), staleEntryCount);
+        }
+        return matchedResults;
+    }
+
+    /**
+     * Returns the issues that have a fingerprint, which are the issues a baseline can hold.
+     */
+    private static Set<Issue> fingerprinted(List<Issue> issues) {
+        Set<Issue> fingerprinted = Collections.newSetFromMap(new IdentityHashMap<>());
+        issues.stream().filter(issue -> issue instanceof IssueImpl issueImpl && issueImpl.finding() != null)
+                .forEach(fingerprinted::add);
+        return fingerprinted;
+    }
+
+    /**
+     * Writes a baseline file for --create-baseline and --prune-baseline, or warns about its stale entries.
+     */
+    private void updateBaseline(BaselineFile file, List<BaselineFile.Entry> entries, int staleEntryCount) {
+        String message;
+        switch (baselineMode) {
+            case CREATE -> message = file.write(entries)
+                    ? "Saved " + entryCount(entries.size()) + " to the baseline at:"
+                    : "The baseline already holds these " + entryCount(entries.size()) + ":";
+            case PRUNE -> {
+                boolean written = file.write(entries);
+                if (staleEntryCount > 0) {
+                    message = "Removed " + staleEntryCount + " stale " + (staleEntryCount == 1 ? "entry" : "entries")
+                            + " from the baseline at:";
+                } else {
+                    message = written ? "Updated the fingerprints in the baseline at:"
+                            : "The baseline has no entries to remove:";
+                }
+            }
+            default -> {
+                if (staleEntryCount > 0) {
+                    warn(DiagnosticLog.warning(DiagnosticCode.BASELINE_STALE_ENTRIES, staleEntryCount,
+                            file.displayPath()));
+                }
+                return;
+            }
+        }
+        baselineReports.add(new BaselineReport(message, file.path()));
+    }
+
+    private static String entryCount(int count) {
+        return count + (count == 1 ? " entry" : " entries");
+    }
+
+    private void printBaselineReports() {
+        if (baselineReports.isEmpty()) {
+            return;
+        }
+        section(Section.BASELINE);
+        for (BaselineReport baselineReport : baselineReports) {
+            errorStream.println(baselineReport.message());
+            errorStream.println("\t" + baselineReport.path().toUri());
+        }
     }
 
     /**
@@ -1191,6 +1506,8 @@ public class ScanCmd implements BLauncherCmd {
 
         List<Issue> issues = projectAnalyzer.analyze(rules.coreRules());
         issues.addAll(externalIssues);
+        // Before rule selection and suppressions, so that leaving out an issue does not renumber the others
+        Fingerprints.assign(project, issues);
 
         PackageConfig config = packageScan.config();
         RuleSelection ruleSelection = config.ruleSelection();
@@ -1202,7 +1519,25 @@ public class ScanCmd implements BLauncherCmd {
         printSuppressionWarnings(suppressionOutcome.diagnostics());
         return new PackageResult(project, issues, suppressionOutcome.activeIssues(),
                 suppressionOutcome.suppressionsByIssue(), packageScan.platforms(), config.gate(),
-                suppressionFailure(suppressionOutcome));
+                suppressionFailure(suppressionOutcome), packageBaseline(project, config),
+                suppressionOutcome.activeIssues(), 0);
+    }
+
+    /**
+     * Returns the baseline of a package with the scope of this scan in it, or null when the package has none.
+     */
+    private PackageBaseline packageBaseline(Project project, PackageConfig config) {
+        BaselineSource source = config.baseline();
+        BaselineFile file = source == null ? null : baselineFiles.get(source.path());
+        if (file == null) {
+            return null;
+        }
+        Path root = project.sourceRoot().toAbsolutePath().normalize();
+        Set<String> excludedFilePaths = config.analyzedSources().excludedFilePaths(project.currentPackage()).stream()
+                .map(filePath -> Fingerprints.packagePath(root, filePath, filePath))
+                .collect(Collectors.toSet());
+        return new PackageBaseline(file, new BaselineMatcher.Scope(Fingerprints.packageName(project),
+                config.ruleSelection(), excludedFilePaths));
     }
 
     /**
@@ -1223,10 +1558,10 @@ public class ScanCmd implements BLauncherCmd {
             return Optional.empty();
         }
         if (scanningWorkspace) {
-            workspaceConsoleIssues.addAll(result.activeIssues());
+            workspaceConsoleIssues.addAll(result.newIssues());
             printWorkspaceIssues = true;
         } else {
-            printIssues(result.activeIssues(), project);
+            printIssues(result.newIssues(), project);
         }
         if (!project.kind().equals(ProjectKind.BUILD_PROJECT)) {
             return Optional.empty();
@@ -1286,10 +1621,25 @@ public class ScanCmd implements BLauncherCmd {
                 .forEach(pendingWarnings::add);
     }
 
-    private void printSummary(int activeIssueCount, int suppressedIssueCount) {
+    /**
+     * Prints the number of issues. With a baseline, the issues in it are counted apart from the new ones.
+     *
+     * @param newIssueCount        the unsuppressed issues that are not in a baseline
+     * @param baselinedIssueCount  the issues in a baseline, or null when no package uses one
+     * @param suppressedIssueCount the suppressed issues
+     */
+    private void printSummary(int newIssueCount, Integer baselinedIssueCount, int suppressedIssueCount) {
         section(Section.SUMMARY);
-        errorStream.println(suppressedIssueCount == 0 ? activeIssueCount + " issue(s)"
-                : activeIssueCount + " issue(s), " + suppressedIssueCount + " suppressed");
+        StringBuilder summary = new StringBuilder();
+        if (baselinedIssueCount == null) {
+            summary.append(newIssueCount).append(" issue(s)");
+        } else {
+            summary.append(newIssueCount).append(" new issue(s), ").append(baselinedIssueCount).append(" in baseline");
+        }
+        if (suppressedIssueCount > 0) {
+            summary.append(", ").append(suppressedIssueCount).append(" suppressed");
+        }
+        errorStream.println(summary);
     }
 
     /**
@@ -1466,15 +1816,68 @@ public class ScanCmd implements BLauncherCmd {
      * @param ruleSelection      the rules to report
      * @param suppressionOptions how suppressions are applied
      * @param gate               the gate the package's issues are checked against
+     * @param baseline           the baseline file of the package, or null when it has none
      */
     private record PackageConfig(AnalyzedSources analyzedSources, RuleSelection ruleSelection,
-                                 SuppressionOptions suppressionOptions, QualityGate gate) {
+                                 SuppressionOptions suppressionOptions, QualityGate gate, BaselineSource baseline) {
     }
 
-    // Holds the project, not the PackageScan, so that the analyzer and rules can be released after the scan
+    // The scanned issues of a package. newIssues are the active issues that are not in the baseline, which are
+    // printed and gated. Holds the project, not the PackageScan, so that the analyzer and rules can be released after
+    // the scan
     private record PackageResult(Project project, List<Issue> issues, List<Issue> activeIssues,
                                  Map<Issue, SuppressedIssue> suppressions, List<SelectedPlatform> platforms,
-                                 QualityGate gate, ScanFailure suppressionFailure) {
+                                 QualityGate gate, ScanFailure suppressionFailure, PackageBaseline baseline,
+                                 List<Issue> newIssues, int baselinedIssueCount) {
+
+        PackageResult withNewIssues(List<Issue> newIssues, int baselinedIssueCount) {
+            return new PackageResult(project, issues, activeIssues, suppressions, platforms, gate,
+                    suppressionFailure, baseline, newIssues, baselinedIssueCount);
+        }
+    }
+
+    /**
+     * What a scan does with the baselines.
+     */
+    private enum BaselineMode {
+        // Reports and gates only the issues that are not in the baseline
+        CHECK(null),
+        CREATE(CREATE_BASELINE_OPTION),
+        PRUNE(PRUNE_BASELINE_OPTION),
+        IGNORE(IGNORE_BASELINE_OPTION);
+
+        private final String option;
+
+        BaselineMode(String option) {
+            this.option = option;
+        }
+
+        String option() {
+            return option;
+        }
+
+        boolean writes() {
+            return this == CREATE || this == PRUNE;
+        }
+    }
+
+    /**
+     * The baseline file of a package.
+     *
+     * @param path          the absolute path of the file
+     * @param displayPath   the path as shown to the user
+     * @param scanTomlLabel the Scan.toml file that sets it, or null when --baseline-path gives it
+     */
+    private record BaselineSource(Path path, String displayPath, String scanTomlLabel) {
+        boolean isOption() {
+            return scanTomlLabel == null;
+        }
+    }
+
+    private record PackageBaseline(BaselineFile file, BaselineMatcher.Scope scope) {
+    }
+
+    private record BaselineReport(String message, Path path) {
     }
 
     private record SelectedPlatform(String name, StaticCodeAnalysisPlatformPlugin plugin,

@@ -42,6 +42,7 @@ public class ScanTomlFile {
     public static final String GATE_FAIL_ON_SEVERITY_SETTING = "[gate] failOnSeverity";
     public static final String GATE_FAIL_ON_COUNT_SETTING = "[gate] failOnCount";
     public static final String ANALYSIS_EXCLUDE_TESTS_SETTING = "[analysis] excludeTests";
+    public static final String BASELINE_PATH_SETTING = "[baseline] path";
     private static final String ANALYZER_SETTING = "[[analyzer]] ";
 
     private final Set<Platform> platforms = new LinkedHashSet<>();
@@ -57,6 +58,7 @@ public class ScanTomlFile {
     private GateSeverity failOnSeverity;
     private Integer failOnCount;
     private boolean excludeTests;
+    private Path baselinePath;
     private Path path;
     private String remoteLocation;
 
@@ -91,6 +93,28 @@ public class ScanTomlFile {
      */
     void writeRules(boolean include, Collection<String> ruleIds) {
         writtenSettings.put(include ? RULE_INCLUDE_SETTING : RULE_EXCLUDE_SETTING, quotedList(ruleIds));
+    }
+
+    /**
+     * Records the baseline file set by {@code [baseline] path}.
+     *
+     * @param resolvedPath the absolute path of the file, resolved against the folder of the Scan.toml file
+     * @param writtenValue the path as written in TOML
+     */
+    void setBaselinePath(Path resolvedPath, String writtenValue) {
+        baselinePath = resolvedPath;
+        writtenSettings.put(BASELINE_PATH_SETTING, writtenValue);
+    }
+
+    /**
+     * Returns the baseline file set by {@code [baseline] path}, which the scan matches its issues against. The file
+     * may not exist yet.
+     *
+     * @return the absolute path of the file, or empty when no baseline is set
+     * @since 0.15.0
+     */
+    public Optional<Path> getBaselinePath() {
+        return Optional.ofNullable(baselinePath);
     }
 
     /**

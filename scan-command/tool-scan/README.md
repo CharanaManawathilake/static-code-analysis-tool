@@ -223,6 +223,10 @@ failOnCount = 5
 # Leave the test sources out of the scan (same as --exclude-tests)
 [analysis]
 excludeTests = true
+
+# The accepted issues, so that the scan reports and gates only new ones (same as --baseline-path)
+[baseline]
+path = "scan-baseline.json"
 ```
 
 The rules given with `--include-rules` are added to `include`, and those given with `--exclude-rules` are added to `exclude`, for that run. For example, with `exclude = ["ballerina:1"]` in `Scan.toml`, `--exclude-rules=ballerina:2` excludes both rules. Including and excluding rules at the same time is not allowed, so an option that conflicts with the other setting in `Scan.toml` is a usage error: with `exclude = ["ballerina:1"]` in `Scan.toml`, `--include-rules=ballerina:2` exits with code `2`.
@@ -260,6 +264,25 @@ By default no gate is set, so findings never fail the scan. The gate is set with
 Each command-line option replaces only its own setting in `Scan.toml` for that run, so a setting left off the command line is still read from `Scan.toml`. For example, `--fail-on-count=2` with `failOnSeverity = "HIGH"` in `Scan.toml` fails on 2 or more issues at or above `HIGH`. `--fail-on-count` does not turn on a gate that `failOnSeverity = "NONE"` turns off; the scan warns that the count has no effect.
 
 The gate counts the issues left after rule selection and suppressions, and runs after the reports are written, so a failing scan still leaves a full report. An error always wins over a tripped gate. In a workspace, each package is checked against its own gate with the issues of that package only, whether the gate comes from the command line, the workspace `Scan.toml` or the package `Scan.toml`. The gate is not checked when a platform fails, since an error wins over the gate.
+
+## Adopting a baseline
+
+A baseline lets a team turn on the gate for an existing codebase: the issues that already exist are recorded in a file committed to the repository, and later scans report and gate only the new ones. Set the file in `Scan.toml`, then record the current issues:
+
+```toml
+[baseline]
+path = "scan-baseline.json"
+```
+
+```bash
+bal scan --create-baseline       # record every current unsuppressed issue; never trips the gate
+bal scan                         # report and gate only the issues that are not in the baseline
+bal scan --prune-baseline        # remove the entries whose issue is gone; never adds entries
+bal scan --ignore-baseline       # report every issue, without reading the baseline
+bal scan --baseline-path=<path>  # use this file instead of [baseline] path for one run
+```
+
+Each issue is matched by its fingerprint, `ballerinaScanHash/v1`, which is written to the `partialFingerprints` of every result in the SARIF and JSON reports. It stays the same when lines are added above the issue, the line is re-indented or a comment is added to it, and changes when the code on the flagged line, the file or the package is changed or renamed. Only `--create-baseline` accepts issues, so accepting a new issue shows up as a change to the baseline file in review. The summary counts the issues in the baseline apart from the new ones, such as `1 new issue(s), 120 in baseline`, and an entry that matches no issue is reported as a warning. A scan filtered with `--include-rules`, `--exclude-rules` or `--exclude-tests` changes only the entries it covers. See [Configure the scan with Scan.toml](https://ballerina.io/learn/scan-tool/#configure-the-scan-with-scantoml) for the file format and the rules for workspaces.
 
 ## Suppressing issues
 

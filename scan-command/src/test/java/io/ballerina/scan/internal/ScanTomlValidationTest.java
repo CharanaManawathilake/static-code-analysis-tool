@@ -43,7 +43,8 @@ import java.util.Optional;
  * @since 0.14.0
  */
 public class ScanTomlValidationTest extends BaseTest {
-    private static final String TABLES = "[[analyzer]], [[platform]], [rule], [suppression], [gate] or [analysis]";
+    private static final String TABLES = "[[analyzer]], [[platform]], [rule], [suppression], [gate], [analysis] "
+            + "or [baseline]";
     private final Path testResourcesRoot = testResources.resolve("test-resources");
     private final Path project = testResourcesRoot.resolve("bal-project-with-scan-toml-errors");
     private final Path scanToml = project.resolve("Scan.toml");
@@ -54,6 +55,7 @@ public class ScanTomlValidationTest extends BaseTest {
     void restoreFiles() throws IOException {
         Files.deleteIfExists(scanToml);
         Files.deleteIfExists(workspaceScanToml);
+        Files.deleteIfExists(project.resolve("scan-baseline.json"));
     }
 
     @DataProvider(name = "invalid-scan-tomls")
@@ -121,6 +123,28 @@ public class ScanTomlValidationTest extends BaseTest {
                         platform = ["plugin.jar"]
                         """, List.of("Scan.toml:1:1: error: 'platform' must be written as [[platform]] tables, or as "
                         + "platform = []")},
+                {"""
+                        baseline = "scan-baseline.json"
+                        """, List.of("Scan.toml:1:1: error: 'baseline' must be a table, written as [baseline]")},
+                {"""
+                        [baseline]
+                        file = "scan-baseline.json"
+                        """, List.of("Scan.toml:2:1: error: unknown key 'file' in [baseline]; expected path")},
+                {"""
+                        [baseline]
+                        path = 1
+                        """, List.of("Scan.toml:2:8: error: invalid value '1' for 'path'; expected the local path of "
+                        + "the baseline file, such as \"scan-baseline.json\"")},
+                {"""
+                        [baseline]
+                        path = ""
+                        """, List.of("Scan.toml:2:8: error: invalid value '' for 'path'; expected the local path of "
+                        + "the baseline file, such as \"scan-baseline.json\"")},
+                {"""
+                        [baseline]
+                        path = "https://example.com/scan-baseline.json"
+                        """, List.of("Scan.toml:2:8: error: invalid value 'https://example.com/scan-baseline.json' for "
+                        + "'path'; expected the local path of the baseline file, such as \"scan-baseline.json\"")},
         };
     }
 
@@ -191,6 +215,12 @@ public class ScanTomlValidationTest extends BaseTest {
 
                 [analysis]
                 excludeTests = false
+
+                [baseline]
+                path = "scan-baseline.json"
+                """);
+        Files.writeString(project.resolve("scan-baseline.json"), """
+                {"version": 1, "fingerprint": "ballerinaScanHash/v1", "issues": []}
                 """);
         ScanRun run = scan(project);
         Assert.assertEquals(run.exitCode(), 0, run.output());
@@ -263,8 +293,8 @@ public class ScanTomlValidationTest extends BaseTest {
         Assert.assertEquals(run.exitCode(), 1, run.output());
         Assert.assertEquals(run.errorReport(), """
                 bal scan: error: Scan.toml has 1 error
-                Scan.toml:1:1: error: unknown table 'gates'; expected [[analyzer]], [rule], [suppression], [gate] \
-                or [analysis]""");
+                Scan.toml:1:1: error: unknown table 'gates'; expected [[analyzer]], [rule], [suppression], [gate], \
+                [analysis] or [baseline]""");
     }
 
     @Test(description = "test a workspace Scan.toml accepts platform = [], which declares no platform")

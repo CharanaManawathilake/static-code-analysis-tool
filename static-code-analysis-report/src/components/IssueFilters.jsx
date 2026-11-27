@@ -20,8 +20,10 @@ import {
     RULE_KIND_ORDER,
     STATUSES,
     SUPPRESSED,
+    BASELINED,
     collectFilterOptions,
     countActiveFilters,
+    countBaselined,
     countSuppressed
 } from "../issueMeta";
 
@@ -63,14 +65,19 @@ export const KindFilterChips = ({ counts, selected, onChange }) => (
     </Box>
 );
 
-// Switches between the active issues, the ones suppressed with `@scan:Suppress`, and both. It's hidden while
-// nothing in scope is suppressed, unless a status other than the default is already selected.
+// Switches between the active issues, the ones in the baseline, the ones suppressed with `@scan:Suppress`, and all
+// of them. It's hidden while nothing in scope is suppressed or baselined, unless a status other than the default is
+// already selected; a status with no issue in scope is left out.
 export const StatusFilter = ({ issues, selected, onChange }) => {
     const suppressed = countSuppressed(issues);
-    if (suppressed === 0 && selected === DEFAULT_STATUS) {
+    const baselined = countBaselined(issues);
+    if (suppressed === 0 && baselined === 0 && selected === DEFAULT_STATUS) {
         return null;
     }
-    const counts = { active: (issues ?? []).length - suppressed, suppressed, all: (issues ?? []).length };
+    const total = (issues ?? []).length;
+    const counts = { active: total - suppressed - baselined, baselined, suppressed, all: total };
+    const shown = Object.entries(STATUSES).filter(([status]) =>
+        status === selected || status === "active" || status === "all" || counts[status] > 0);
     return (
         <ToggleButtonGroup
             size="small"
@@ -80,9 +87,10 @@ export const StatusFilter = ({ issues, selected, onChange }) => {
             aria-label="Issue status"
             sx={{ "& .MuiToggleButton-root": { textTransform: "none", fontWeight: 600, padding: "2px 10px", gap: "0.35rem" } }}
         >
-            {Object.entries(STATUSES).map(([status, { label }]) => (
+            {shown.map(([status, { label }]) => (
                 <ToggleButton key={status} value={status}>
                     {status === "suppressed" && <SUPPRESSED.Icon sx={{ fontSize: 16, color: SUPPRESSED.color }} />}
+                    {status === "baselined" && <BASELINED.Icon sx={{ fontSize: 16, color: BASELINED.color }} />}
                     {label} · {counts[status]}
                 </ToggleButton>
             ))}

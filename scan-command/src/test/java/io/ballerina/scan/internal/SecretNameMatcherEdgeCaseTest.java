@@ -19,7 +19,6 @@
 package io.ballerina.scan.internal;
 
 import org.testng.Assert;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -38,8 +37,7 @@ public class SecretNameMatcherEdgeCaseTest {
     private static final List<String> PREPOSITIONS = SecretNameMatcher.PREPOSITIONS.stream().sorted().toList();
     private static final List<String> DESCRIPTORS = SecretNameMatcher.DESCRIPTORS.stream().sorted().toList();
 
-    @DataProvider
-    Object[][] casingVariants() {
+    private static Object[][] casingVariants() {
         return new Object[][]{
                 // UPPER_SNAKE
                 {"DB_PASSWORD", true}, {"JWT_SECRET", true}, {"GITHUB_TOKEN", true}, {"AWS_SECRET_ACCESS_KEY", true},
@@ -68,8 +66,7 @@ public class SecretNameMatcherEdgeCaseTest {
         };
     }
 
-    @DataProvider
-    Object[][] digits() {
+    private static Object[][] digits() {
         return new Object[][]{
                 {"password1", true}, {"password123", true}, {"pwd2", true}, {"2faToken", true},
                 {"s3SecretKey", true}, {"base64Secret", true}, {"md5Password", true}, {"pkcs12Password", true},
@@ -81,8 +78,7 @@ public class SecretNameMatcherEdgeCaseTest {
         };
     }
 
-    @DataProvider
-    Object[][] separatorsAndQuoting() {
+    private static Object[][] separatorsAndQuoting() {
         return new Object[][]{
                 {"_password", true}, {"password_", true}, {"__token__", true}, {"-api-key-", true},
                 {"password__", true}, {"  secret  ", true}, {"$apiKey", true}, {"_tokenUrl_", false},
@@ -98,8 +94,7 @@ public class SecretNameMatcherEdgeCaseTest {
         };
     }
 
-    @DataProvider
-    Object[][] unicodeAndEmpty() {
+    private static Object[][] unicodeAndEmpty() {
         return new Object[][]{
                 {"", false}, {" ", false}, {"_", false}, {"'", false}, {"\"\"", false}, {"--", false},
                 {"\t\n", false},
@@ -110,8 +105,7 @@ public class SecretNameMatcherEdgeCaseTest {
         };
     }
 
-    @DataProvider
-    Object[][] severalKeywords() {
+    private static Object[][] severalKeywords() {
         return new Object[][]{
                 {"passwordToken", true}, {"tokenSecret", true}, {"apiKeyAndSecret", true}, {"authTokenSecret", true},
                 {"tokenUrlSecret", true}, {"secretPathToken", true}, {"passwordFileAndToken", true},
@@ -125,8 +119,7 @@ public class SecretNameMatcherEdgeCaseTest {
         };
     }
 
-    @DataProvider
-    Object[][] prepositionsAndDescriptors() {
+    private static Object[][] prepositionsAndDescriptors() {
         return new Object[][]{
                 {"tokenForUrl", true}, {"passwordOfFileName", true}, {"secretFromVaultPath", true},
                 {"apiKeyFromFile", true}, {"tokenToId", true}, {"credentialsViaPath", true},
@@ -138,8 +131,7 @@ public class SecretNameMatcherEdgeCaseTest {
         };
     }
 
-    @DataProvider
-    Object[][] everyDescriptor() {
+    private static Object[][] everyDescriptor() {
         List<Object[]> cases = new ArrayList<>();
         for (String descriptor : DESCRIPTORS) {
             String capitalized = capitalize(descriptor);
@@ -155,8 +147,7 @@ public class SecretNameMatcherEdgeCaseTest {
         return cases.toArray(Object[][]::new);
     }
 
-    @DataProvider
-    Object[][] everyPreposition() {
+    private static Object[][] everyPreposition() {
         List<Object[]> cases = new ArrayList<>();
         for (String preposition : PREPOSITIONS) {
             String capitalized = capitalize(preposition);
@@ -168,8 +159,7 @@ public class SecretNameMatcherEdgeCaseTest {
         return cases.toArray(Object[][]::new);
     }
 
-    @DataProvider
-    Object[][] everyKeyword() {
+    private static Object[][] everyKeyword() {
         List<Object[]> cases = new ArrayList<>();
         for (String keyword : EMBEDDED_KEYWORDS) {
             cases.add(new Object[]{keyword, true});
@@ -194,8 +184,7 @@ public class SecretNameMatcherEdgeCaseTest {
         return cases.toArray(Object[][]::new);
     }
 
-    @DataProvider
-    Object[][] pluralsAndWordPrefixes() {
+    private static Object[][] pluralsAndWordPrefixes() {
         return new Object[][]{
                 {"passwords", true}, {"dbPasswords", true}, {"secrets", true}, {"clientSecrets", true},
                 {"credentials", true}, {"Credentials", true}, {"passphrases", true}, {"passcodes", true},
@@ -209,54 +198,54 @@ public class SecretNameMatcherEdgeCaseTest {
         };
     }
 
-    @Test(dataProvider = "casingVariants")
-    void testCasingVariants(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testCasingVariants() {
+        CaseTables.assertCases(casingVariants(), SecretNameMatcher::isSecretName);
     }
 
-    @Test(dataProvider = "digits")
-    void testDigits(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testDigits() {
+        CaseTables.assertCases(digits(), SecretNameMatcher::isSecretName);
     }
 
-    @Test(dataProvider = "separatorsAndQuoting")
-    void testSeparatorsAndQuoting(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testSeparatorsAndQuoting() {
+        CaseTables.assertCases(separatorsAndQuoting(), SecretNameMatcher::isSecretName);
     }
 
-    @Test(dataProvider = "unicodeAndEmpty")
-    void testUnicodeAndEmpty(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testUnicodeAndEmpty() {
+        CaseTables.assertCases(unicodeAndEmpty(), SecretNameMatcher::isSecretName);
     }
 
-    @Test(dataProvider = "severalKeywords")
-    void testSeveralKeywords(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testSeveralKeywords() {
+        CaseTables.assertCases(severalKeywords(), SecretNameMatcher::isSecretName);
     }
 
-    @Test(dataProvider = "prepositionsAndDescriptors")
-    void testPrepositionsAndDescriptors(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testPrepositionsAndDescriptors() {
+        CaseTables.assertCases(prepositionsAndDescriptors(), SecretNameMatcher::isSecretName);
     }
 
-    @Test(dataProvider = "everyDescriptor")
-    void testEveryDescriptor(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testEveryDescriptor() {
+        CaseTables.assertCases(everyDescriptor(), SecretNameMatcher::isSecretName);
     }
 
-    @Test(dataProvider = "everyPreposition")
-    void testEveryPreposition(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testEveryPreposition() {
+        CaseTables.assertCases(everyPreposition(), SecretNameMatcher::isSecretName);
     }
 
-    @Test(dataProvider = "everyKeyword")
-    void testEveryKeyword(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testEveryKeyword() {
+        CaseTables.assertCases(everyKeyword(), SecretNameMatcher::isSecretName);
     }
 
-    @Test(dataProvider = "pluralsAndWordPrefixes")
-    void testPluralsAndWordPrefixes(String name, boolean expected) {
-        assertSecretName(name, expected);
+    @Test
+    void testPluralsAndWordPrefixes() {
+        CaseTables.assertCases(pluralsAndWordPrefixes(), SecretNameMatcher::isSecretName);
     }
 
     @Test

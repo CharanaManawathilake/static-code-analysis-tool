@@ -7,6 +7,7 @@ import {
     DragHandle,
     KeyboardArrowDown,
     InfoOutlined,
+    FactCheckOutlined,
     VisibilityOffOutlined,
 } from "@mui/icons-material";
 
@@ -34,9 +35,27 @@ export const getSuppressedRules = (issue) => issue?.suppression?.rules ?? [];
 
 export const countSuppressed = (issues) => (issues ?? []).filter(isSuppressed).length;
 
+// Issues accepted in the baseline file are shown in the neutral Info color, apart from the new ones.
+export const BASELINED = { label: "In baseline", color: "#757575", Icon: FactCheckOutlined };
+
+// Only a scan with a baseline writes `baselineState`; a suppressed issue is never in the baseline.
+export const isBaselined = (issue) => issue?.baselineState === "unchanged";
+
+export const countBaselined = (issues) => (issues ?? []).filter(isBaselined).length;
+
+// The issues the console prints and the gate counts: neither suppressed nor in the baseline.
+export const isActive = (issue) => !isSuppressed(issue) && !isBaselined(issue);
+
+// The fingerprint that identifies the issue across scans, as written to the baseline file.
+export const getFingerprint = (issue) => issue?.fingerprint ?? null;
+
 // Color of an issue's highlights and accents; `fallback` covers an unknown rule kind.
-export const getIssueColor = (issue, fallback) =>
-    isSuppressed(issue) ? SUPPRESSED.color : RULE_KINDS[getRuleKind(issue)]?.color ?? fallback;
+export const getIssueColor = (issue, fallback) => {
+    if (isSuppressed(issue)) {
+        return SUPPRESSED.color;
+    }
+    return isBaselined(issue) ? BASELINED.color : RULE_KINDS[getRuleKind(issue)]?.color ?? fallback;
+};
 
 export const SEVERITIES = {
     BLOCKER: { label: "Blocker", rank: 5, color: "#F74B5A", Icon: KeyboardDoubleArrowUp },
@@ -158,10 +177,11 @@ export const countByKind = (issues) => {
 // Stable key used in the URL hash to identify a scanned file.
 export const getFileKey = (file) => file?.filePath ?? file?.fileName;
 
-// Which issues are listed: the active ones by default, so the counts match the console and the reports'
-// active issues, or the suppressed ones, or both.
+// Which issues are listed: the active ones by default, so the counts match the console and the gate, or the
+// ones in the baseline, or the suppressed ones, or all of them.
 export const STATUSES = {
     active: { label: "Active" },
+    baselined: { label: BASELINED.label },
     suppressed: { label: "Suppressed" },
     all: { label: "All" },
 };
@@ -188,8 +208,18 @@ export const countActiveFilters = (filters, keys = FILTER_LIST_KEYS) =>
     + (filters.status !== DEFAULT_STATUS ? 1 : 0)
     + keys.filter((key) => filters[key].length > 0).length;
 
-export const matchesStatus = (issue, status) =>
-    status === "all" || (status === "suppressed") === isSuppressed(issue);
+export const matchesStatus = (issue, status) => {
+    switch (status) {
+        case "all":
+            return true;
+        case "suppressed":
+            return isSuppressed(issue);
+        case "baselined":
+            return isBaselined(issue);
+        default:
+            return isActive(issue);
+    }
+};
 
 const intersects = (selected, values) => selected.length === 0 || values.some((value) => selected.includes(value));
 
@@ -206,6 +236,7 @@ export const matchesSearch = (issue, term) => {
         ...getCweList(issue).map(cweLabel),
         ...getOwaspEntries(issue).flatMap(({ code, title }) => [code, title]),
         getJustification(issue),
+        getFingerprint(issue),
     ].filter(Boolean).join(" ").toLowerCase();
     return haystack.includes(term.toLowerCase());
 };

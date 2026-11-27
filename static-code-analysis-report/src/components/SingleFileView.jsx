@@ -11,7 +11,16 @@ import {
 import { useState } from "react"
 import SingleFileTable from "./SingleFileTable"
 import SingleFileContent from "./SingleFileContent"
-import { RULE_KINDS, RULE_KIND_ORDER, SUPPRESSED, countByKind, countSuppressed, isSuppressed } from "../issueMeta"
+import {
+    BASELINED,
+    RULE_KINDS,
+    RULE_KIND_ORDER,
+    SUPPRESSED,
+    countBaselined,
+    countByKind,
+    countSuppressed,
+    isActive
+} from "../issueMeta"
 import { PROJECT_KINDS, findPackage, getBaseName, getRelativePath, packageLabel } from "../projectTree"
 
 function SingleFileView({ requestedFile, project, selectedIssue, onBack, onSelectIssue, filters, onFiltersChange }) {
@@ -89,9 +98,10 @@ const CountPill = ({ count, color, Icon, label, plural }) => (
     </Box>
 )
 
-// The kind pills count active issues; suppressed ones get their own pill when there are any.
+// The kind pills count active issues; baselined and suppressed ones get their own pills when there are any.
 const FileHeader = ({ file, project, issues, onBack }) => {
-    const counts = countByKind(issues.filter((issue) => !isSuppressed(issue)))
+    const counts = countByKind(issues.filter(isActive))
+    const baselined = countBaselined(issues)
     const suppressed = countSuppressed(issues)
     const workspace = project?.projectKind === PROJECT_KINDS.WORKSPACE
     const pkg = findPackage(project?.packages, file)
@@ -163,6 +173,10 @@ const FileHeader = ({ file, project, issues, onBack }) => {
                     {RULE_KIND_ORDER.map((kind) => (
                         <CountPill key={kind} count={counts[kind]} {...RULE_KINDS[kind]} />
                     ))}
+                    {baselined > 0 &&
+                        <CountPill count={baselined} color={BASELINED.color} Icon={BASELINED.Icon}
+                            label={BASELINED.label} plural={BASELINED.label} />
+                    }
                     {suppressed > 0 &&
                         <CountPill count={suppressed} color={SUPPRESSED.color} Icon={SUPPRESSED.Icon}
                             label={SUPPRESSED.label} plural={SUPPRESSED.label} />

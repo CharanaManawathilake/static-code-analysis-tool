@@ -20,6 +20,8 @@ package io.ballerina.scan;
 
 import io.ballerina.tools.diagnostics.Location;
 
+import java.util.Map;
+
 /**
  * {@code Issue} represents a rule violation reported during static code analysis.
  *
@@ -46,4 +48,16 @@ public interface Issue {
      * @return source of the reported issue
      */
     Source source();
+
+    /**
+     * Returns the partial fingerprints of the issue, keyed by a versioned name such as
+     * {@code ballerinaScanHash/v1}, as written to the {@code partialFingerprints} of a SARIF result. A fingerprint
+     * stays the same when unrelated code changes, so that a platform can track the issue across scans.
+     *
+     * @return an unmodifiable map of the partial fingerprints, which is empty when none was computed
+     * @since 0.15.0
+     */
+    default Map<String, String> partialFingerprints() {
+        return Map.of();
+    }
 }

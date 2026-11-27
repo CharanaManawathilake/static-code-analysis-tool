@@ -4,6 +4,13 @@ All notable changes to the Ballerina scan tool are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Each release states the Ballerina distribution it is built against. Releases for older distributions are maintained on the `support/*` branches, which keep their own changelog.
 
+## [Unreleased]
+
+### Added
+
+- Every issue has a fingerprint, `ballerinaScanHash/v1`, written to the `partialFingerprints` of each result in the SARIF report and of each issue in `scan_results.json` and the JSON printed to standard output, shown in the HTML report, and given to platform plugins by the new default method `Issue.partialFingerprints()`. It is a hash of the rule ID, the package, the file path relative to the package root and the tokens of the first flagged line, so it does not change when lines are added above the issue, the line is re-indented or a comment is added to it. Identical issues in one file are numbered in source order after the hash, such as `:1` and `:2`. ([#113](https://github.com/ballerina-platform/static-code-analysis-tool/issues/113))
+- A baseline, set by `path` in the new `[baseline]` table of `Scan.toml` or by `--baseline-path`, records the accepted issues in a JSON file committed to the repository. With a baseline, the console prints only the new issues, the summary counts the others, such as `1 new issue(s), 120 in baseline`, the gate counts only the new issues, and every result in the reports carries a `baselineState` of `new` or `unchanged`. `--create-baseline` records the current unsuppressed issues and never trips the gate, `--prune-baseline` removes the entries that match no issue, and `--ignore-baseline` reports every issue without reading the file. A scan filtered to some rules, packages or sources changes only the entries it covers, and a stale entry is reported as a warning. The HTML report lists baselined issues under their own `In baseline` status. ([#223](https://github.com/ballerina-platform/static-code-analysis-tool/issues/223))
+
 ## [0.14.0] - 2026-11-17
 
 Built against Ballerina 2201.13.2.

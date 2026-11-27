@@ -87,6 +87,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -101,6 +102,10 @@ import static io.ballerina.scan.utils.Constants.ANALYZER_ORG;
 import static io.ballerina.scan.utils.Constants.ANALYZER_REPOSITORY;
 import static io.ballerina.scan.utils.Constants.ANALYZER_TABLE;
 import static io.ballerina.scan.utils.Constants.ANALYZER_VERSION;
+import static io.ballerina.scan.utils.Constants.BASELINE_STATE;
+import static io.ballerina.scan.utils.Constants.BASELINE_STATE_NEW;
+import static io.ballerina.scan.utils.Constants.BASELINE_PATH;
+import static io.ballerina.scan.utils.Constants.BASELINE_TABLE;
 import static io.ballerina.scan.utils.Constants.CUSTOM_RULES_COMPILER_PLUGIN_VERSION_PATTERN;
 import static io.ballerina.scan.utils.Constants.EXCLUDE_KEY;
 import static io.ballerina.scan.utils.Constants.GATE_FAIL_ON_COUNT;
@@ -109,6 +114,7 @@ import static io.ballerina.scan.utils.Constants.GATE_TABLE;
 import static io.ballerina.scan.utils.Constants.IMPORT_GENERATOR_FILE;
 import static io.ballerina.scan.utils.Constants.INCLUDE_KEY;
 import static io.ballerina.scan.utils.Constants.JAR_PREDICATE;
+import static io.ballerina.scan.utils.Constants.PARTIAL_FINGERPRINTS;
 import static io.ballerina.scan.utils.Constants.PATH_ARGUMENT_SUFFIX;
 import static io.ballerina.scan.utils.Constants.PLATFORM_NAME;
 import static io.ballerina.scan.utils.Constants.PLATFORM_PATH;
@@ -137,6 +143,7 @@ import static io.ballerina.scan.utils.Constants.SCAN_REPORT_FILE_PATH;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_FILE_RELATIVE_PATH;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_ISSUE_CWE;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_ISSUE_DETAILS;
+import static io.ballerina.scan.utils.Constants.SCAN_REPORT_ISSUE_FINGERPRINT;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_ISSUE_HELP_URI;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_ISSUE_KIND;
 import static io.ballerina.scan.utils.Constants.SCAN_REPORT_ISSUE_MESSAGE;
@@ -192,9 +199,11 @@ public final class ScanUtils {
     public static final String GATE_COUNT_VALUES = "a whole number of 1 or more";
 
     private static final String RULE_LIST_VALUES = "an array of rule IDs, such as [\"ballerina:1\"]";
+    private static final String BASELINE_PATH_VALUES = "the local path of the baseline file, such as "
+            + "\"scan-baseline.json\"";
     // The top-level tables of a Scan.toml file, each written as it is expected
     private static final Map<String, String> TOP_LEVEL_TABLES = tableForms(List.of(ANALYZER_TABLE, PLATFORM_TABLE),
-            List.of(RULES_TABLE, SUPPRESSION_TABLE, GATE_TABLE, ANALYSIS_TABLE));
+            List.of(RULES_TABLE, SUPPRESSION_TABLE, GATE_TABLE, ANALYSIS_TABLE, BASELINE_TABLE));
     private static final String TABLE_VALUES = joinWith(TOP_LEVEL_TABLES.values(), "or");
     // A workspace Scan.toml cannot set platforms
     private static final String WORKSPACE_TABLE_VALUES = joinWith(TOP_LEVEL_TABLES.entrySet().stream()
@@ -353,6 +362,7 @@ public final class ScanUtils {
 
         Path root = project == null ? null : project.sourceRoot().toAbsolutePath().normalize();
         Map<String, String> fileContentCache = new HashMap<>();
+        boolean writeBaselineStates = hasBaselineStates(issues);
         for (int i = 0; i < issues.size(); i++) {
             IssueImpl issueImpl = (IssueImpl) issues.get(i);
             JsonObject issueAsJson = new JsonObject();
@@ -365,6 +375,7 @@ public final class ScanUtils {
             if (snippetText != null) {
                 issueAsJson.getAsJsonObject("location").addProperty("snippet", snippetText);
             }
+            addFingerprintAndBaselineState(issueAsJson, issueImpl, writeBaselineStates);
             SuppressedIssue suppressedIssue = suppressions.get(issueImpl);
             if (suppressedIssue != null) {
                 issueAsJson.add(SUPPRESSIONS, toSuppressionsJson(suppressedIssue));
@@ -401,6 +412,36 @@ public final class ScanUtils {
         Path path = Paths.get(issue.filePath());
         String relativePath = path.isAbsolute() ? toRelativePath(root, path) : null;
         return relativePath == null || relativePath.isEmpty() ? issue.location().lineRange().fileName() : relativePath;
+    }
+
+    /**
+     * Adds the {@code partialFingerprints} of an issue, and its {@code baselineState} when the run uses a baseline.
+     */
+    private static void addFingerprintAndBaselineState(JsonObject result, IssueImpl issue,
+                                                       boolean writeBaselineStates) {
+        Map<String, String> fingerprints = issue.partialFingerprints();
+        if (!fingerprints.isEmpty()) {
+            JsonObject partialFingerprints = new JsonObject();
+            new TreeMap<>(fingerprints).forEach(partialFingerprints::addProperty);
+            result.add(PARTIAL_FINGERPRINTS, partialFingerprints);
+        }
+        if (writeBaselineStates) {
+            result.addProperty(BASELINE_STATE, baselineState(issue));
+        }
+    }
+
+    /**
+     * Returns whether the results carry a {@code baselineState}. SARIF requires it on every result of a run or on none,
+     * so when any issue has one, every issue gets one.
+     */
+    private static boolean hasBaselineStates(List<Issue> issues) {
+        return issues.stream().anyMatch(issue -> issue instanceof IssueImpl issueImpl
+                && issueImpl.baselineState() != null);
+    }
+
+    // An issue of a package without a baseline, in a workspace whose other packages have one, is new
+    private static String baselineState(IssueImpl issue) {
+        return issue.baselineState() == null ? BASELINE_STATE_NEW : issue.baselineState();
     }
 
     private static JsonArray toSuppressionsJson(SuppressedIssue suppressedIssue) {
@@ -483,6 +524,7 @@ public final class ScanUtils {
         // Create results array
         JsonArray results = new JsonArray();
         Map<String, String> fileContentCache = new HashMap<>();
+        boolean writeBaselineStates = hasBaselineStates(issues);
 
         for (Issue issue : issues) {
             IssueImpl issueImpl = (IssueImpl) issue;
@@ -528,6 +570,7 @@ public final class ScanUtils {
             location.add("physicalLocation", physicalLocation);
             locations.add(location);
             result.add("locations", locations);
+            addFingerprintAndBaselineState(result, issueImpl, writeBaselineStates);
 
             // SARIF requires the suppressions of a run's results to be all present or all absent; an empty array
             // marks a result as not suppressed
@@ -1056,6 +1099,11 @@ public final class ScanUtils {
                 .offset());
 
         scanReportIssue.add(SCAN_REPORT_ISSUE_TEXT_RANGE, scanReportIssueTextRange);
+        issueImpl.partialFingerprints().entrySet().stream().findFirst().ifPresent(fingerprint ->
+                scanReportIssue.addProperty(SCAN_REPORT_ISSUE_FINGERPRINT, fingerprint.getValue()));
+        if (issueImpl.baselineState() != null) {
+            scanReportIssue.addProperty(BASELINE_STATE, issueImpl.baselineState());
+        }
         if (suppressedIssue != null) {
             scanReportIssue.add(SCAN_REPORT_ISSUE_SUPPRESSION, getJsonSuppression(suppressedIssue));
         }
@@ -1559,6 +1607,14 @@ public final class ScanUtils {
             scanTomlDocumentContent.getTable(ANALYSIS_TABLE)
                     .ifPresent(analysisTable -> loadAnalysis(analysisTable, scanTomlFile, errors));
         }
+        TopLevelNode baselineNode = entries.get(BASELINE_TABLE);
+        if (baselineNode != null && baselineNode.kind() != TomlType.TABLE) {
+            errors.add(new ConfigError(baselineNode.location().lineRange(),
+                    DiagnosticLog.error(DiagnosticCode.INVALID_CONFIG_TABLE, BASELINE_TABLE)));
+        } else if (baselineNode != null) {
+            scanTomlDocumentContent.getTable(BASELINE_TABLE)
+                    .ifPresent(baselineTable -> loadBaseline(baselineTable, scanTomlFile, baseDir, errors));
+        }
         // A misspelled table, such as [gates], would otherwise turn its settings off without notice
         entries.forEach((key, node) -> {
             if (!TOP_LEVEL_TABLES.containsKey(key)) {
@@ -1676,6 +1732,36 @@ public final class ScanUtils {
             } else {
                 errors.add(invalidConfigValue(value, ANALYSIS_EXCLUDE_TESTS, "true or false"));
             }
+        });
+    }
+
+    /**
+     * Loads the [baseline] table, adding an error for an unknown key or a path that is not a local file path. A
+     * relative path is resolved against the folder of the Scan.toml file.
+     */
+    private static void loadBaseline(Toml baselineTable, ScanTomlFile scanTomlFile, Path baseDir,
+                                     List<ConfigError> errors) {
+        baselineTable.rootNode().entries().forEach((key, node) -> {
+            if (!key.equals(BASELINE_PATH)) {
+                errors.add(new ConfigError(node.location().lineRange(),
+                        DiagnosticLog.error(DiagnosticCode.UNKNOWN_CONFIG_KEY, key, BASELINE_TABLE, BASELINE_PATH)));
+            }
+        });
+        int errorCount = errors.size();
+        checkStringEntry(baselineTable, BASELINE_PATH, BASELINE_PATH_VALUES, errors);
+        if (errors.size() > errorCount) {
+            return;
+        }
+        baselineTable.<TomlValueNode>get(BASELINE_PATH).ifPresent(value -> {
+            String path = value.toNativeValue().toString();
+            Optional<Path> baselinePath = path.isBlank() || isUrl(path) ? Optional.empty()
+                    : convertConfigurationPath(path);
+            if (baselinePath.isEmpty()) {
+                errors.add(invalidConfigValue(value, BASELINE_PATH, BASELINE_PATH_VALUES));
+                return;
+            }
+            scanTomlFile.setBaselinePath(baseDir.resolve(baselinePath.get()).toAbsolutePath().normalize(),
+                    "\"" + path + "\"");
         });
     }
 

@@ -43,6 +43,7 @@ final class ConsoleLayout {
         RULES,
         RESULTS,
         SUMMARY,
+        BASELINE,
         RESULTS_FILE,
         SCAN_REPORT,
         PLATFORMS,

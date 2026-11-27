@@ -39,6 +39,9 @@
     },
     "source": "BUILT_IN",
     "fileName": "main.bal",
-    "filePath": "<ABS_SOURCE_ROOT>/main.bal"
+    "filePath": "<ABS_SOURCE_ROOT>/main.bal",
+    "partialFingerprints": {
+      "ballerinaScanHash/v1": "c5a7e703bc4e166eeabeadfdf9836d1c:1"
+    }
   }
 ]

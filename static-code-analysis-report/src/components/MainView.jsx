@@ -2,13 +2,22 @@ import { Alert, Box, Typography } from "@mui/material";
 import InfoCards from "./InfoCards";
 import MainTable from "./MainTable";
 import { useMemo } from "react";
-import { countActiveFilters, countByKind, countSuppressed, isSuppressed, matchesFilters, matchesStatus } from "../issueMeta";
+import {
+    countActiveFilters,
+    countBaselined,
+    countByKind,
+    countSuppressed,
+    isActive,
+    matchesFilters,
+    matchesStatus
+} from "../issueMeta";
 
 function retrieveAllStats(analyzedFiles) {
     const issues = (analyzedFiles ?? []).flatMap((analyzedFile) => analyzedFile.issues ?? [])
     return {
         filesScanned: (analyzedFiles ?? []).length,
-        kindCounts: countByKind(issues.filter((issue) => !isSuppressed(issue))),
+        kindCounts: countByKind(issues.filter(isActive)),
+        baselined: countBaselined(issues),
         suppressed: countSuppressed(issues),
     }
 }

@@ -61,6 +61,10 @@ under the License.
             <class name="io.ballerina.scan.internal.SecretValueTracingTest"/>
             <class name="io.ballerina.scan.internal.ProjectAnalyzerTest"/>
             <class name="io.ballerina.scan.internal.RegionConversionTest"/>
+            <class name="io.ballerina.scan.internal.FingerprintsTest"/>
+            <class name="io.ballerina.scan.internal.BaselineMatcherTest"/>
+            <class name="io.ballerina.scan.internal.BaselineFileTest"/>
+            <class name="io.ballerina.scan.internal.BaselineTest"/>
             <class name="io.ballerina.scan.utils.ScanUtilsTest"/>
             <class name="io.ballerina.scan.utils.ScanTomlWriterTest"/>
             <class name="io.ballerina.scan.utils.ScanTomlFileTest"/>
